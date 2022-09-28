@@ -1,0 +1,397 @@
+; ModuleID = 'racetest0.c'
+source_filename = "racetest0.c"
+target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%union.pthread_cond_t = type { %struct.__pthread_cond_s }
+%struct.__pthread_cond_s = type { %union.anon, %union.anon.0, [2 x i32], [2 x i32], i32, i32, [2 x i32] }
+%union.anon = type { i64 }
+%union.anon.0 = type { i64 }
+%union.pthread_mutex_t = type { %struct.__pthread_mutex_s }
+%struct.__pthread_mutex_s = type { i32, i32, i32, i32, i32, i16, i16, %struct.__pthread_internal_list }
+%struct.__pthread_internal_list = type { %struct.__pthread_internal_list*, %struct.__pthread_internal_list* }
+%struct.fp = type { i32, i64*, %union.pthread_mutex_t, %union.pthread_cond_t, i8* (i8*)* }
+%union.pthread_condattr_t = type { i32 }
+%union.pthread_mutexattr_t = type { i32 }
+%union.pthread_attr_t = type { i64, [48 x i8] }
+
+@i = dso_local global i32 1, align 4, !dbg !0
+@gcond = dso_local global %union.pthread_cond_t zeroinitializer, align 8, !dbg !99
+@.str = private unnamed_addr constant [13 x i8] c"thread1: %d\0A\00", align 1
+@.str.1 = private unnamed_addr constant [13 x i8] c"thread2: %d\0A\00", align 1
+@t_g = dso_local global i64 0, align 8, !dbg !95
+@gmutex = dso_local global %union.pthread_mutex_t zeroinitializer, align 8, !dbg !97
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local i32 @main() #0 !dbg !107 {
+  %1 = alloca i32, align 4
+  %2 = alloca i64, align 8
+  %3 = alloca %struct.fp, align 8
+  %4 = alloca i32, align 4
+  %5 = alloca %struct.fp, align 8
+  store i32 0, i32* %1, align 4
+  call void @llvm.dbg.declare(metadata i64* %2, metadata !110, metadata !DIExpression()), !dbg !111
+  call void @llvm.dbg.declare(metadata %struct.fp* %3, metadata !112, metadata !DIExpression()), !dbg !113
+  %6 = getelementptr inbounds %struct.fp, %struct.fp* %3, i32 0, i32 3, !dbg !114
+  %7 = call i32 @pthread_cond_init(%union.pthread_cond_t* %6, %union.pthread_condattr_t* null) #4, !dbg !115
+  %8 = getelementptr inbounds %struct.fp, %struct.fp* %3, i32 0, i32 2, !dbg !116
+  %9 = call i32 @pthread_mutex_init(%union.pthread_mutex_t* %8, %union.pthread_mutexattr_t* null) #4, !dbg !117
+  call void @llvm.dbg.declare(metadata i32* %4, metadata !118, metadata !DIExpression()), !dbg !120
+  store i32 0, i32* %4, align 4, !dbg !120
+  br label %10, !dbg !121
+
+10:                                               ; preds = %16, %0
+  %11 = load i32, i32* %4, align 4, !dbg !122
+  %12 = icmp slt i32 %11, 2, !dbg !124
+  br i1 %12, label %13, label %19, !dbg !125
+
+13:                                               ; preds = %10
+  %14 = bitcast %struct.fp* %3 to i8*, !dbg !126
+  %15 = call i32 @pthread_create(i64* %2, %union.pthread_attr_t* null, i8* (i8*)* @thread1, i8* %14) #4, !dbg !127
+  br label %16, !dbg !127
+
+16:                                               ; preds = %13
+  %17 = load i32, i32* %4, align 4, !dbg !128
+  %18 = add nsw i32 %17, 1, !dbg !128
+  store i32 %18, i32* %4, align 4, !dbg !128
+  br label %10, !dbg !129, !llvm.loop !130
+
+19:                                               ; preds = %10
+  %20 = bitcast %struct.fp* %3 to i8*, !dbg !133
+  %21 = call i8* @thread2(i8* %20), !dbg !134
+  call void @llvm.dbg.declare(metadata %struct.fp* %5, metadata !135, metadata !DIExpression()), !dbg !136
+  %22 = getelementptr inbounds %struct.fp, %struct.fp* %5, i32 0, i32 0, !dbg !137
+  store i32 1, i32* %22, align 8, !dbg !138
+  %23 = load i32, i32* %1, align 4, !dbg !139
+  ret i32 %23, !dbg !139
+}
+
+; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
+declare void @llvm.dbg.declare(metadata, metadata, metadata) #1
+
+; Function Attrs: nounwind
+declare dso_local i32 @pthread_cond_init(%union.pthread_cond_t*, %union.pthread_condattr_t*) #2
+
+; Function Attrs: nounwind
+declare dso_local i32 @pthread_mutex_init(%union.pthread_mutex_t*, %union.pthread_mutexattr_t*) #2
+
+; Function Attrs: nounwind
+declare dso_local i32 @pthread_create(i64*, %union.pthread_attr_t*, i8* (i8*)*, i8*) #2
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local i8* @thread1(i8* %0) #0 !dbg !140 {
+  %2 = alloca i8*, align 8
+  %3 = alloca i8*, align 8
+  %4 = alloca %struct.fp*, align 8
+  store i8* %0, i8** %3, align 8
+  call void @llvm.dbg.declare(metadata i8** %3, metadata !141, metadata !DIExpression()), !dbg !142
+  call void @llvm.dbg.declare(metadata %struct.fp** %4, metadata !143, metadata !DIExpression()), !dbg !144
+  %5 = load i8*, i8** %3, align 8, !dbg !145
+  %6 = bitcast i8* %5 to %struct.fp*, !dbg !146
+  store %struct.fp* %6, %struct.fp** %4, align 8, !dbg !144
+  %7 = load %struct.fp*, %struct.fp** %4, align 8, !dbg !147
+  %8 = getelementptr inbounds %struct.fp, %struct.fp* %7, i32 0, i32 2, !dbg !148
+  %9 = call i32 @pthread_mutex_lock(%union.pthread_mutex_t* %8) #4, !dbg !149
+  %10 = load %struct.fp*, %struct.fp** %4, align 8, !dbg !150
+  %11 = getelementptr inbounds %struct.fp, %struct.fp* %10, i32 0, i32 3, !dbg !151
+  %12 = load %struct.fp*, %struct.fp** %4, align 8, !dbg !152
+  %13 = getelementptr inbounds %struct.fp, %struct.fp* %12, i32 0, i32 2, !dbg !153
+  %14 = call i32 @pthread_cond_wait(%union.pthread_cond_t* %11, %union.pthread_mutex_t* %13), !dbg !154
+  %15 = load %struct.fp*, %struct.fp** %4, align 8, !dbg !155
+  %16 = getelementptr inbounds %struct.fp, %struct.fp* %15, i32 0, i32 2, !dbg !156
+  %17 = call i32 @pthread_cond_wait(%union.pthread_cond_t* @gcond, %union.pthread_mutex_t* %16), !dbg !157
+  %18 = load i32, i32* @i, align 4, !dbg !158
+  %19 = add nsw i32 %18, 1, !dbg !158
+  store i32 %19, i32* @i, align 4, !dbg !158
+  %20 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([13 x i8], [13 x i8]* @.str, i64 0, i64 0), i32 %18), !dbg !159
+  %21 = load %struct.fp*, %struct.fp** %4, align 8, !dbg !160
+  %22 = getelementptr inbounds %struct.fp, %struct.fp* %21, i32 0, i32 2, !dbg !161
+  %23 = call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %22) #4, !dbg !162
+  %24 = call i32 @sleep(i32 1), !dbg !163
+  %25 = load i8*, i8** %2, align 8, !dbg !164
+  ret i8* %25, !dbg !164
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local i8* @thread2(i8* %0) #0 !dbg !165 {
+  %2 = alloca i8*, align 8
+  %3 = alloca i8*, align 8
+  %4 = alloca %struct.fp*, align 8
+  store i8* %0, i8** %3, align 8
+  call void @llvm.dbg.declare(metadata i8** %3, metadata !166, metadata !DIExpression()), !dbg !167
+  call void @llvm.dbg.declare(metadata %struct.fp** %4, metadata !168, metadata !DIExpression()), !dbg !169
+  %5 = load i8*, i8** %3, align 8, !dbg !170
+  %6 = bitcast i8* %5 to %struct.fp*, !dbg !171
+  store %struct.fp* %6, %struct.fp** %4, align 8, !dbg !169
+  %7 = load %struct.fp*, %struct.fp** %4, align 8, !dbg !172
+  %8 = getelementptr inbounds %struct.fp, %struct.fp* %7, i32 0, i32 2, !dbg !173
+  %9 = call i32 @pthread_mutex_lock(%union.pthread_mutex_t* %8) #4, !dbg !174
+  %10 = load i32, i32* @i, align 4, !dbg !175
+  %11 = add nsw i32 %10, 1, !dbg !175
+  store i32 %11, i32* @i, align 4, !dbg !175
+  %12 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([13 x i8], [13 x i8]* @.str.1, i64 0, i64 0), i32 %10), !dbg !176
+  %13 = load %struct.fp*, %struct.fp** %4, align 8, !dbg !177
+  %14 = getelementptr inbounds %struct.fp, %struct.fp* %13, i32 0, i32 3, !dbg !178
+  %15 = call i32 @pthread_cond_signal(%union.pthread_cond_t* %14) #4, !dbg !179
+  %16 = load %struct.fp*, %struct.fp** %4, align 8, !dbg !180
+  %17 = getelementptr inbounds %struct.fp, %struct.fp* %16, i32 0, i32 3, !dbg !181
+  %18 = call i32 @pthread_cond_signal(%union.pthread_cond_t* %17) #4, !dbg !182
+  %19 = load %struct.fp*, %struct.fp** %4, align 8, !dbg !183
+  %20 = getelementptr inbounds %struct.fp, %struct.fp* %19, i32 0, i32 2, !dbg !184
+  %21 = call i32 @pthread_mutex_unlock(%union.pthread_mutex_t* %20) #4, !dbg !185
+  %22 = call i32 @sleep(i32 1), !dbg !186
+  %23 = load i8*, i8** %2, align 8, !dbg !187
+  ret i8* %23, !dbg !187
+}
+
+; Function Attrs: nounwind
+declare dso_local i32 @pthread_mutex_lock(%union.pthread_mutex_t*) #2
+
+declare dso_local i32 @pthread_cond_wait(%union.pthread_cond_t*, %union.pthread_mutex_t*) #3
+
+declare dso_local i32 @printf(i8*, ...) #3
+
+; Function Attrs: nounwind
+declare dso_local i32 @pthread_mutex_unlock(%union.pthread_mutex_t*) #2
+
+declare dso_local i32 @sleep(i32) #3
+
+; Function Attrs: nounwind
+declare dso_local i32 @pthread_cond_signal(%union.pthread_cond_t*) #2
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local i8* @thread3(i8* %0) #0 !dbg !188 {
+  %2 = alloca i8*, align 8
+  %3 = alloca i8*, align 8
+  store i8* %0, i8** %3, align 8
+  call void @llvm.dbg.declare(metadata i8** %3, metadata !189, metadata !DIExpression()), !dbg !190
+  %4 = load i32, i32* @i, align 4, !dbg !191
+  %5 = add nsw i32 %4, 1, !dbg !191
+  store i32 %5, i32* @i, align 4, !dbg !191
+  %6 = load i8*, i8** %2, align 8, !dbg !192
+  ret i8* %6, !dbg !192
+}
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @fptest(%struct.fp* %0) #0 !dbg !193 {
+  %2 = alloca %struct.fp*, align 8
+  store %struct.fp* %0, %struct.fp** %2, align 8
+  call void @llvm.dbg.declare(metadata %struct.fp** %2, metadata !196, metadata !DIExpression()), !dbg !197
+  %3 = load %struct.fp*, %struct.fp** %2, align 8, !dbg !198
+  %4 = getelementptr inbounds %struct.fp, %struct.fp* %3, i32 0, i32 4, !dbg !199
+  %5 = load i8* (i8*)*, i8* (i8*)** %4, align 8, !dbg !199
+  %6 = call i8* %5(i8* null), !dbg !198
+  ret void, !dbg !200
+}
+
+attributes #0 = { noinline nounwind optnone uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #1 = { nofree nosync nounwind readnone speculatable willreturn }
+attributes #2 = { nounwind "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #3 = { "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #4 = { nounwind }
+
+!llvm.dbg.cu = !{!2}
+!llvm.module.flags = !{!101, !102, !103, !104, !105}
+!llvm.ident = !{!106}
+
+!0 = !DIGlobalVariableExpression(var: !1, expr: !DIExpression())
+!1 = distinct !DIGlobalVariable(name: "i", scope: !2, file: !3, line: 14, type: !12, isLocal: false, isDefinition: true)
+!2 = distinct !DICompileUnit(language: DW_LANG_C99, file: !3, producer: "clang version 13.0.0", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, enums: !4, retainedTypes: !5, globals: !94, splitDebugInlining: false, nameTableKind: None)
+!3 = !DIFile(filename: "racetest0.c", directory: "/home/SVF-tools/svfdev/svf/tools/MTA/racetest/racetest0")
+!4 = !{}
+!5 = !{!6, !7}
+!6 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: null, size: 64)
+!7 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !8, size: 64)
+!8 = !DIDerivedType(tag: DW_TAG_typedef, name: "SFP", file: !3, line: 23, baseType: !9)
+!9 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "fp", file: !3, line: 16, size: 896, elements: !10)
+!10 = !{!11, !13, !18, !50, !90}
+!11 = !DIDerivedType(tag: DW_TAG_member, name: "data", scope: !9, file: !3, line: 18, baseType: !12, size: 32)
+!12 = !DIBasicType(name: "int", size: 32, encoding: DW_ATE_signed)
+!13 = !DIDerivedType(tag: DW_TAG_member, name: "t_a", scope: !9, file: !3, line: 19, baseType: !14, size: 64, offset: 64)
+!14 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !15, size: 64)
+!15 = !DIDerivedType(tag: DW_TAG_typedef, name: "pthread_t", file: !16, line: 27, baseType: !17)
+!16 = !DIFile(filename: "/usr/include/x86_64-linux-gnu/bits/pthreadtypes.h", directory: "")
+!17 = !DIBasicType(name: "long unsigned int", size: 64, encoding: DW_ATE_unsigned)
+!18 = !DIDerivedType(tag: DW_TAG_member, name: "mutex", scope: !9, file: !3, line: 20, baseType: !19, size: 320, offset: 128)
+!19 = !DIDerivedType(tag: DW_TAG_typedef, name: "pthread_mutex_t", file: !16, line: 72, baseType: !20)
+!20 = distinct !DICompositeType(tag: DW_TAG_union_type, file: !16, line: 67, size: 320, elements: !21)
+!21 = !{!22, !43, !48}
+!22 = !DIDerivedType(tag: DW_TAG_member, name: "__data", scope: !20, file: !16, line: 69, baseType: !23, size: 320)
+!23 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "__pthread_mutex_s", file: !24, line: 22, size: 320, elements: !25)
+!24 = !DIFile(filename: "/usr/include/x86_64-linux-gnu/bits/struct_mutex.h", directory: "")
+!25 = !{!26, !27, !29, !30, !31, !32, !34, !35}
+!26 = !DIDerivedType(tag: DW_TAG_member, name: "__lock", scope: !23, file: !24, line: 24, baseType: !12, size: 32)
+!27 = !DIDerivedType(tag: DW_TAG_member, name: "__count", scope: !23, file: !24, line: 25, baseType: !28, size: 32, offset: 32)
+!28 = !DIBasicType(name: "unsigned int", size: 32, encoding: DW_ATE_unsigned)
+!29 = !DIDerivedType(tag: DW_TAG_member, name: "__owner", scope: !23, file: !24, line: 26, baseType: !12, size: 32, offset: 64)
+!30 = !DIDerivedType(tag: DW_TAG_member, name: "__nusers", scope: !23, file: !24, line: 28, baseType: !28, size: 32, offset: 96)
+!31 = !DIDerivedType(tag: DW_TAG_member, name: "__kind", scope: !23, file: !24, line: 32, baseType: !12, size: 32, offset: 128)
+!32 = !DIDerivedType(tag: DW_TAG_member, name: "__spins", scope: !23, file: !24, line: 34, baseType: !33, size: 16, offset: 160)
+!33 = !DIBasicType(name: "short", size: 16, encoding: DW_ATE_signed)
+!34 = !DIDerivedType(tag: DW_TAG_member, name: "__elision", scope: !23, file: !24, line: 35, baseType: !33, size: 16, offset: 176)
+!35 = !DIDerivedType(tag: DW_TAG_member, name: "__list", scope: !23, file: !24, line: 36, baseType: !36, size: 128, offset: 192)
+!36 = !DIDerivedType(tag: DW_TAG_typedef, name: "__pthread_list_t", file: !37, line: 53, baseType: !38)
+!37 = !DIFile(filename: "/usr/include/x86_64-linux-gnu/bits/thread-shared-types.h", directory: "")
+!38 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "__pthread_internal_list", file: !37, line: 49, size: 128, elements: !39)
+!39 = !{!40, !42}
+!40 = !DIDerivedType(tag: DW_TAG_member, name: "__prev", scope: !38, file: !37, line: 51, baseType: !41, size: 64)
+!41 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !38, size: 64)
+!42 = !DIDerivedType(tag: DW_TAG_member, name: "__next", scope: !38, file: !37, line: 52, baseType: !41, size: 64, offset: 64)
+!43 = !DIDerivedType(tag: DW_TAG_member, name: "__size", scope: !20, file: !16, line: 70, baseType: !44, size: 320)
+!44 = !DICompositeType(tag: DW_TAG_array_type, baseType: !45, size: 320, elements: !46)
+!45 = !DIBasicType(name: "char", size: 8, encoding: DW_ATE_signed_char)
+!46 = !{!47}
+!47 = !DISubrange(count: 40)
+!48 = !DIDerivedType(tag: DW_TAG_member, name: "__align", scope: !20, file: !16, line: 71, baseType: !49, size: 64)
+!49 = !DIBasicType(name: "long int", size: 64, encoding: DW_ATE_signed)
+!50 = !DIDerivedType(tag: DW_TAG_member, name: "cond", scope: !9, file: !3, line: 21, baseType: !51, size: 384, offset: 448)
+!51 = !DIDerivedType(tag: DW_TAG_typedef, name: "pthread_cond_t", file: !16, line: 80, baseType: !52)
+!52 = distinct !DICompositeType(tag: DW_TAG_union_type, file: !16, line: 75, size: 384, elements: !53)
+!53 = !{!54, !84, !88}
+!54 = !DIDerivedType(tag: DW_TAG_member, name: "__data", scope: !52, file: !16, line: 77, baseType: !55, size: 384)
+!55 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "__pthread_cond_s", file: !37, line: 92, size: 384, elements: !56)
+!56 = !{!57, !67, !76, !80, !81, !82, !83}
+!57 = !DIDerivedType(tag: DW_TAG_member, scope: !55, file: !37, line: 94, baseType: !58, size: 64)
+!58 = distinct !DICompositeType(tag: DW_TAG_union_type, scope: !55, file: !37, line: 94, size: 64, elements: !59)
+!59 = !{!60, !62}
+!60 = !DIDerivedType(tag: DW_TAG_member, name: "__wseq", scope: !58, file: !37, line: 96, baseType: !61, size: 64)
+!61 = !DIBasicType(name: "long long unsigned int", size: 64, encoding: DW_ATE_unsigned)
+!62 = !DIDerivedType(tag: DW_TAG_member, name: "__wseq32", scope: !58, file: !37, line: 101, baseType: !63, size: 64)
+!63 = distinct !DICompositeType(tag: DW_TAG_structure_type, scope: !58, file: !37, line: 97, size: 64, elements: !64)
+!64 = !{!65, !66}
+!65 = !DIDerivedType(tag: DW_TAG_member, name: "__low", scope: !63, file: !37, line: 99, baseType: !28, size: 32)
+!66 = !DIDerivedType(tag: DW_TAG_member, name: "__high", scope: !63, file: !37, line: 100, baseType: !28, size: 32, offset: 32)
+!67 = !DIDerivedType(tag: DW_TAG_member, scope: !55, file: !37, line: 103, baseType: !68, size: 64, offset: 64)
+!68 = distinct !DICompositeType(tag: DW_TAG_union_type, scope: !55, file: !37, line: 103, size: 64, elements: !69)
+!69 = !{!70, !71}
+!70 = !DIDerivedType(tag: DW_TAG_member, name: "__g1_start", scope: !68, file: !37, line: 105, baseType: !61, size: 64)
+!71 = !DIDerivedType(tag: DW_TAG_member, name: "__g1_start32", scope: !68, file: !37, line: 110, baseType: !72, size: 64)
+!72 = distinct !DICompositeType(tag: DW_TAG_structure_type, scope: !68, file: !37, line: 106, size: 64, elements: !73)
+!73 = !{!74, !75}
+!74 = !DIDerivedType(tag: DW_TAG_member, name: "__low", scope: !72, file: !37, line: 108, baseType: !28, size: 32)
+!75 = !DIDerivedType(tag: DW_TAG_member, name: "__high", scope: !72, file: !37, line: 109, baseType: !28, size: 32, offset: 32)
+!76 = !DIDerivedType(tag: DW_TAG_member, name: "__g_refs", scope: !55, file: !37, line: 112, baseType: !77, size: 64, offset: 128)
+!77 = !DICompositeType(tag: DW_TAG_array_type, baseType: !28, size: 64, elements: !78)
+!78 = !{!79}
+!79 = !DISubrange(count: 2)
+!80 = !DIDerivedType(tag: DW_TAG_member, name: "__g_size", scope: !55, file: !37, line: 113, baseType: !77, size: 64, offset: 192)
+!81 = !DIDerivedType(tag: DW_TAG_member, name: "__g1_orig_size", scope: !55, file: !37, line: 114, baseType: !28, size: 32, offset: 256)
+!82 = !DIDerivedType(tag: DW_TAG_member, name: "__wrefs", scope: !55, file: !37, line: 115, baseType: !28, size: 32, offset: 288)
+!83 = !DIDerivedType(tag: DW_TAG_member, name: "__g_signals", scope: !55, file: !37, line: 116, baseType: !77, size: 64, offset: 320)
+!84 = !DIDerivedType(tag: DW_TAG_member, name: "__size", scope: !52, file: !16, line: 78, baseType: !85, size: 384)
+!85 = !DICompositeType(tag: DW_TAG_array_type, baseType: !45, size: 384, elements: !86)
+!86 = !{!87}
+!87 = !DISubrange(count: 48)
+!88 = !DIDerivedType(tag: DW_TAG_member, name: "__align", scope: !52, file: !16, line: 79, baseType: !89, size: 64)
+!89 = !DIBasicType(name: "long long int", size: 64, encoding: DW_ATE_signed)
+!90 = !DIDerivedType(tag: DW_TAG_member, name: "fun", scope: !9, file: !3, line: 22, baseType: !91, size: 64, offset: 832)
+!91 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !92, size: 64)
+!92 = !DISubroutineType(types: !93)
+!93 = !{!6, !6}
+!94 = !{!0, !95, !97, !99}
+!95 = !DIGlobalVariableExpression(var: !96, expr: !DIExpression())
+!96 = distinct !DIGlobalVariable(name: "t_g", scope: !2, file: !3, line: 6, type: !15, isLocal: false, isDefinition: true)
+!97 = !DIGlobalVariableExpression(var: !98, expr: !DIExpression())
+!98 = distinct !DIGlobalVariable(name: "gmutex", scope: !2, file: !3, line: 7, type: !19, isLocal: false, isDefinition: true)
+!99 = !DIGlobalVariableExpression(var: !100, expr: !DIExpression())
+!100 = distinct !DIGlobalVariable(name: "gcond", scope: !2, file: !3, line: 8, type: !51, isLocal: false, isDefinition: true)
+!101 = !{i32 7, !"Dwarf Version", i32 4}
+!102 = !{i32 2, !"Debug Info Version", i32 3}
+!103 = !{i32 1, !"wchar_size", i32 4}
+!104 = !{i32 7, !"uwtable", i32 1}
+!105 = !{i32 7, !"frame-pointer", i32 2}
+!106 = !{!"clang version 13.0.0"}
+!107 = distinct !DISubprogram(name: "main", scope: !3, file: !3, line: 27, type: !108, scopeLine: 27, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !4)
+!108 = !DISubroutineType(types: !109)
+!109 = !{!12}
+!110 = !DILocalVariable(name: "t_a", scope: !107, file: !3, line: 28, type: !15)
+!111 = !DILocation(line: 28, column: 15, scope: !107)
+!112 = !DILocalVariable(name: "sfp", scope: !107, file: !3, line: 30, type: !8)
+!113 = !DILocation(line: 30, column: 9, scope: !107)
+!114 = !DILocation(line: 31, column: 29, scope: !107)
+!115 = !DILocation(line: 31, column: 5, scope: !107)
+!116 = !DILocation(line: 32, column: 30, scope: !107)
+!117 = !DILocation(line: 32, column: 5, scope: !107)
+!118 = !DILocalVariable(name: "i", scope: !119, file: !3, line: 34, type: !12)
+!119 = distinct !DILexicalBlock(scope: !107, file: !3, line: 34, column: 5)
+!120 = !DILocation(line: 34, column: 13, scope: !119)
+!121 = !DILocation(line: 34, column: 9, scope: !119)
+!122 = !DILocation(line: 34, column: 20, scope: !123)
+!123 = distinct !DILexicalBlock(scope: !119, file: !3, line: 34, column: 5)
+!124 = !DILocation(line: 34, column: 21, scope: !123)
+!125 = !DILocation(line: 34, column: 5, scope: !119)
+!126 = !DILocation(line: 35, column: 42, scope: !123)
+!127 = !DILocation(line: 35, column: 9, scope: !123)
+!128 = !DILocation(line: 34, column: 26, scope: !123)
+!129 = !DILocation(line: 34, column: 5, scope: !123)
+!130 = distinct !{!130, !125, !131, !132}
+!131 = !DILocation(line: 35, column: 55, scope: !119)
+!132 = !{!"llvm.loop.mustprogress"}
+!133 = !DILocation(line: 36, column: 13, scope: !107)
+!134 = !DILocation(line: 36, column: 5, scope: !107)
+!135 = !DILocalVariable(name: "tmp", scope: !107, file: !3, line: 42, type: !8)
+!136 = !DILocation(line: 42, column: 9, scope: !107)
+!137 = !DILocation(line: 43, column: 9, scope: !107)
+!138 = !DILocation(line: 43, column: 13, scope: !107)
+!139 = !DILocation(line: 46, column: 1, scope: !107)
+!140 = distinct !DISubprogram(name: "thread1", scope: !3, file: !3, line: 48, type: !92, scopeLine: 48, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !4)
+!141 = !DILocalVariable(name: "junk", arg: 1, scope: !140, file: !3, line: 48, type: !6)
+!142 = !DILocation(line: 48, column: 21, scope: !140)
+!143 = !DILocalVariable(name: "tmp", scope: !140, file: !3, line: 49, type: !7)
+!144 = !DILocation(line: 49, column: 10, scope: !140)
+!145 = !DILocation(line: 49, column: 23, scope: !140)
+!146 = !DILocation(line: 49, column: 16, scope: !140)
+!147 = !DILocation(line: 50, column: 26, scope: !140)
+!148 = !DILocation(line: 50, column: 31, scope: !140)
+!149 = !DILocation(line: 50, column: 5, scope: !140)
+!150 = !DILocation(line: 51, column: 25, scope: !140)
+!151 = !DILocation(line: 51, column: 30, scope: !140)
+!152 = !DILocation(line: 51, column: 38, scope: !140)
+!153 = !DILocation(line: 51, column: 43, scope: !140)
+!154 = !DILocation(line: 51, column: 5, scope: !140)
+!155 = !DILocation(line: 52, column: 34, scope: !140)
+!156 = !DILocation(line: 52, column: 39, scope: !140)
+!157 = !DILocation(line: 52, column: 5, scope: !140)
+!158 = !DILocation(line: 53, column: 29, scope: !140)
+!159 = !DILocation(line: 53, column: 5, scope: !140)
+!160 = !DILocation(line: 54, column: 28, scope: !140)
+!161 = !DILocation(line: 54, column: 33, scope: !140)
+!162 = !DILocation(line: 54, column: 5, scope: !140)
+!163 = !DILocation(line: 55, column: 5, scope: !140)
+!164 = !DILocation(line: 56, column: 1, scope: !140)
+!165 = distinct !DISubprogram(name: "thread2", scope: !3, file: !3, line: 58, type: !92, scopeLine: 58, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !4)
+!166 = !DILocalVariable(name: "junk", arg: 1, scope: !165, file: !3, line: 58, type: !6)
+!167 = !DILocation(line: 58, column: 20, scope: !165)
+!168 = !DILocalVariable(name: "tmp", scope: !165, file: !3, line: 60, type: !7)
+!169 = !DILocation(line: 60, column: 10, scope: !165)
+!170 = !DILocation(line: 60, column: 23, scope: !165)
+!171 = !DILocation(line: 60, column: 16, scope: !165)
+!172 = !DILocation(line: 61, column: 26, scope: !165)
+!173 = !DILocation(line: 61, column: 31, scope: !165)
+!174 = !DILocation(line: 61, column: 5, scope: !165)
+!175 = !DILocation(line: 62, column: 29, scope: !165)
+!176 = !DILocation(line: 62, column: 5, scope: !165)
+!177 = !DILocation(line: 63, column: 27, scope: !165)
+!178 = !DILocation(line: 63, column: 32, scope: !165)
+!179 = !DILocation(line: 63, column: 5, scope: !165)
+!180 = !DILocation(line: 64, column: 27, scope: !165)
+!181 = !DILocation(line: 64, column: 32, scope: !165)
+!182 = !DILocation(line: 64, column: 5, scope: !165)
+!183 = !DILocation(line: 65, column: 28, scope: !165)
+!184 = !DILocation(line: 65, column: 33, scope: !165)
+!185 = !DILocation(line: 65, column: 5, scope: !165)
+!186 = !DILocation(line: 66, column: 5, scope: !165)
+!187 = !DILocation(line: 67, column: 1, scope: !165)
+!188 = distinct !DISubprogram(name: "thread3", scope: !3, file: !3, line: 69, type: !92, scopeLine: 69, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !4)
+!189 = !DILocalVariable(name: "junk", arg: 1, scope: !188, file: !3, line: 69, type: !6)
+!190 = !DILocation(line: 69, column: 21, scope: !188)
+!191 = !DILocation(line: 70, column: 6, scope: !188)
+!192 = !DILocation(line: 71, column: 1, scope: !188)
+!193 = distinct !DISubprogram(name: "fptest", scope: !3, file: !3, line: 72, type: !194, scopeLine: 73, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !2, retainedNodes: !4)
+!194 = !DISubroutineType(types: !195)
+!195 = !{null, !7}
+!196 = !DILocalVariable(name: "sfp", arg: 1, scope: !193, file: !3, line: 72, type: !7)
+!197 = !DILocation(line: 72, column: 18, scope: !193)
+!198 = !DILocation(line: 74, column: 5, scope: !193)
+!199 = !DILocation(line: 74, column: 10, scope: !193)
+!200 = !DILocation(line: 75, column: 1, scope: !193)
