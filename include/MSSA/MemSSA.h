@@ -2,7 +2,7 @@
 //
 //                     SVF: Static Value-Flow Analysis
 //
-// Copyright (C) <2013-2017>  <Yulei Sui>
+// Copyright (C) <2013->  <Yulei Sui>
 //
 
 // This program is free software: you can redistribute it and/or modify
@@ -25,7 +25,13 @@
  *
  *  Created on: Jul 14, 2013
  *      Author: Yulei Sui
+ *
+ * The implementation is based on
+ * Yulei Sui, Hua Yan, Yunpeng Zhang, Jingling Xue and Zheng Zheng.
+ * "Parallel Construction of Interprocedural Memory SSA Form".
+ * Journal of Systems and Software (JSS'16), Algorithm 3 in the paper
  */
+
 
 #ifndef MEMORYSSAPASS_H_
 #define MEMORYSSAPASS_H_
@@ -75,7 +81,7 @@ public:
     typedef Map<const StoreStmt*, CHISet> StoreToChiSetMap;
     typedef Map<const CallICFGNode*, MUSet> CallSiteToMUSetMap;
     typedef Map<const CallICFGNode*, CHISet> CallSiteToCHISetMap;
-    typedef Map<const BasicBlock*, PHISet> BBToPhiSetMap;
+    typedef OrderedMap<const BasicBlock*, PHISet> BBToPhiSetMap;
     //@}
 
     /// Map from fun to its entry chi set and return mu set
@@ -114,8 +120,6 @@ public:
 protected:
     BVDataPTAImpl* pta;
     MRGenerator* mrGen;
-    DominanceFrontier* df;
-    DominatorTree* dt;
     MemSSAStat* stat;
 
     /// Create mu chi for candidate regions in a function
@@ -285,19 +289,6 @@ private:
             phi->setOpVer(getTopStackVer(phi->getMR()), pos);
         }
     }
-
-    //@}
-    /// Get/set methods for dominace frontier/tree
-    //@{
-    DominanceFrontier* getDF(const SVFFunction&)
-    {
-        return df;
-    }
-    DominatorTree* getDT(const SVFFunction&)
-    {
-        return dt;
-    }
-    void setCurrentDFDT(DominanceFrontier* f, DominatorTree* t);
     //@}
 
 public:
@@ -322,7 +313,7 @@ public:
         return mrGen;
     }
     /// We start from here
-    virtual void buildMemSSA(const SVFFunction& fun,DominanceFrontier*, DominatorTree*);
+    virtual void buildMemSSA(const SVFFunction& fun);
 
     /// Perform statistics
     void performStat();
@@ -343,7 +334,7 @@ public:
     inline bool hasCHI(const PAGEdge* inst) const
     {
         if (const StoreStmt* store = SVFUtil::dyn_cast<StoreStmt>(
-                                       inst))
+                                         inst))
         {
             assert(0 != store2ChiSetMap.count(store)
                    && "not associated with mem region!");

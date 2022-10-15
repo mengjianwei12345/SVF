@@ -2,7 +2,7 @@
 //
 //                     SVF: Static Value-Flow Analysis
 //
-// Copyright (C) <2013-2017>  <Yulei Sui>
+// Copyright (C) <2013->  <Yulei Sui>
 //
 
 // This program is free software: you can redistribute it and/or modify
@@ -59,7 +59,7 @@ public:
     /// Add ActualParmVFGNode
     inline void addActualParmVFGNode(const PAGNode* pagNode, const CallICFGNode* cs)
     {
-    	svfg->addActualParmVFGNode(pagNode, cs);
+        svfg->addActualParmVFGNode(pagNode, cs);
     }
 
 protected:

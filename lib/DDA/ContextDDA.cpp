@@ -1,3 +1,25 @@
+//===- ContextDDA.cpp -- Context-sensitive demand-driven analysis-------------//
+//
+//                     SVF: Static Value-Flow Analysis
+//
+// Copyright (C) <2013->  <Yulei Sui>
+//
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+//===----------------------------------------------------------------------===//
+
 /*
  * ContextDDA.cpp
  *
@@ -315,12 +337,15 @@ bool ContextDDA::isHeapCondMemObj(const CxtVar& var, const StoreSVFGNode*)
     assert(mem && "memory object is null??");
     if(mem->isHeap())
     {
-        if (!mem->getValue()) {
+        if (!mem->getValue())
+        {
             PAGNode *pnode = _pag->getGNode(getPtrNodeID(var));
-            if(GepObjVar* gepobj = SVFUtil::dyn_cast<GepObjVar>(pnode)){
+            if(GepObjVar* gepobj = SVFUtil::dyn_cast<GepObjVar>(pnode))
+            {
                 assert(SVFUtil::isa<DummyObjVar>(_pag->getGNode(gepobj->getBaseNode())) && "emtpy refVal in a gep object whose base is a non-dummy object");
             }
-            else{
+            else
+            {
                 assert((SVFUtil::isa<DummyObjVar>(pnode) || SVFUtil::isa<DummyValVar>(pnode)) && "empty refVal in non-dummy object");
             }
             return true;
@@ -333,7 +358,7 @@ bool ContextDDA::isHeapCondMemObj(const CxtVar& var, const StoreSVFGNode*)
                 return true;
             if(var.get_cond().isConcreteCxt() == false)
                 return true;
-            if(loopInfoBuilder.getLoopInfo(fun)->getLoopFor(mallocSite->getParent()))
+            if(_pag->getICFG()->isInLoop(mallocSite))
                 return true;
         }
     }

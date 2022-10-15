@@ -29,13 +29,14 @@
 
 #include "Util/Options.h"
 #include "Graphs/CHG.h"
-#include "SVF-FE/LLVMUtil.h"
+#include "Util/SVFUtil.h"
 #include "MemoryModel/PointsTo.h"
 #include "WPA/Andersen.h"
 #include "WPA/Steensgaard.h"
 
 using namespace SVF;
 using namespace SVFUtil;
+using namespace std;
 
 
 u32_t AndersenBase::numOfProcessedAddr = 0;
@@ -62,8 +63,8 @@ double AndersenBase::timeOfUpdateCallGraph = 0;
  */
 AndersenBase::~AndersenBase()
 {
-  delete consCG;
-  consCG = nullptr;
+    delete consCG;
+    consCG = nullptr;
 }
 
 /*!
@@ -78,8 +79,8 @@ void AndersenBase::initialize()
     setGraph(consCG);
     /// Create statistic class
     stat = new AndersenStat(this);
-	if (Options::ConsCGDotGraph)
-		consCG->dump("consCG_initial");
+    if (Options::ConsCGDotGraph)
+        consCG->dump("consCG_initial");
 }
 
 /*!
@@ -88,11 +89,11 @@ void AndersenBase::initialize()
 void AndersenBase::finalize()
 {
     /// dump constraint graph if PAGDotGraph flag is enabled
-	if (Options::ConsCGDotGraph)
-		consCG->dump("consCG_final");
+    if (Options::ConsCGDotGraph)
+        consCG->dump("consCG_final");
 
-	if (Options::PrintCGGraph)
-		consCG->print();
+    if (Options::PrintCGGraph)
+        consCG->print();
     BVDataPTAImpl::finalize();
 }
 
@@ -105,7 +106,8 @@ void AndersenBase::analyze()
     initialize();
 
     bool readResultsFromFile = false;
-    if(!Options::ReadAnder.empty()) {
+    if(!Options::ReadAnder.empty())
+    {
         readResultsFromFile = this->readFromFile(Options::ReadAnder);
         // Finalize the analysis
         PointerAnalysis::finalize();
@@ -148,7 +150,8 @@ void AndersenBase::analyze()
         this->writeToFile(Options::WriteAnder);
 }
 
-void AndersenBase::cleanConsCG(NodeID id) {
+void AndersenBase::cleanConsCG(NodeID id)
+{
     consCG->resetSubs(consCG->getRep(id));
     for (NodeID sub: consCG->getSubs(id))
         consCG->resetRep(sub);
@@ -164,7 +167,8 @@ void AndersenBase::normalizePointsTo()
 
     // clear GepObjVarMap/memToFieldsMap/nodeToSubsMap/nodeToRepMap
     // for redundant gepnodes and remove those nodes from pag
-    for (NodeID n: redundantGepNodes) {
+    for (NodeID n: redundantGepNodes)
+    {
         NodeID base = pag->getBaseObjVar(n);
         GepObjVar *gepNode = SVFUtil::dyn_cast<GepObjVar>(pag->getGNode(n));
         assert(gepNode && "Not a gep node in redundantGepNodes set");
@@ -183,8 +187,6 @@ void AndersenBase::normalizePointsTo()
 void Andersen::initialize()
 {
     resetData();
-    setDiffOpt(Options::PtsDiff);
-    setPWCOpt(Options::MergePWC);
     AndersenBase::initialize();
 
     if (Options::ClusterAnder) cluster();
@@ -213,7 +215,7 @@ void Andersen::finalize()
     /// sanitize field insensitive obj
     /// TODO: Fields has been collapsed during Andersen::collapseField().
     //	sanitizePts();
-	AndersenBase::finalize();
+    AndersenBase::finalize();
 }
 
 /*!
@@ -422,17 +424,14 @@ bool Andersen::processGepPts(const PointsTo& pts, const GepCGEdge* edge)
         // base object is always returned.
         for (NodeID o : pts)
         {
-            if (consCG->isBlkObjOrConstantObj(o))
+            if (consCG->isBlkObjOrConstantObj(o) || isFieldInsensitive(o))
             {
                 tmpDstPts.set(o);
                 continue;
             }
 
-            if (!matchType(edge->getSrcID(), o, normalGepEdge)) continue;
-
             NodeID fieldSrcPtdNode = consCG->getGepObjVar(o, normalGepEdge->getLocationSet());
             tmpDstPts.set(fieldSrcPtdNode);
-            addTypeForGepObjNode(fieldSrcPtdNode, normalGepEdge);
         }
     }
     else
@@ -458,7 +457,7 @@ inline void Andersen::collapsePWCNode(NodeID nodeId)
     // If a node is a PWC node, collapse all its points-to tarsget.
     // collapseNodePts() may change the points-to set of the nodes which have been processed
     // before, in this case, we may need to re-do the analysis.
-    if (mergePWC() && consCG->isPWCNode(nodeId) && collapseNodePts(nodeId))
+    if (consCG->isPWCNode(nodeId) && collapseNodePts(nodeId))
         reanalyze = true;
 }
 
@@ -579,7 +578,8 @@ bool Andersen::collapseField(NodeID nodeId)
             // merge field node into base node, including edges and pts.
             NodeID fieldRepNodeId = consCG->sccRepNode(fieldId);
             mergeNodeToRep(fieldRepNodeId, baseRepNodeId);
-            if (fieldId != baseRepNodeId){
+            if (fieldId != baseRepNodeId)
+            {
                 // gep node fieldId becomes redundant if it is merged to its base node who is set as field-insensitive
                 // two node IDs should be different otherwise this field is actually the base and should not be removed.
                 redundantGepNodes.set(fieldId);

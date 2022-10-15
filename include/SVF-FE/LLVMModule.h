@@ -30,6 +30,7 @@
 #ifndef INCLUDE_SVF_FE_LLVMMODULE_H_
 #define INCLUDE_SVF_FE_LLVMMODULE_H_
 
+#include "SVF-FE/BasicTypes.h"
 #include "SVF-FE/CPPUtil.h"
 #include "Util/BasicTypes.h"
 #include "Util/SVFModule.h"
@@ -41,9 +42,9 @@ class LLVMModuleSet
 {
 public:
 
-    typedef std::vector<const SVFFunction*> FunctionSetType;
-    typedef Map<const SVFFunction*, const SVFFunction*> FunDeclToDefMapTy;
-    typedef Map<const SVFFunction*, FunctionSetType> FunDefToDeclsMapTy;
+    typedef std::vector<const Function*> FunctionSetType;
+    typedef Map<const Function*, const Function*> FunDeclToDefMapTy;
+    typedef Map<const Function*, FunctionSetType> FunDefToDeclsMapTy;
     typedef Map<const GlobalVariable*, GlobalVariable*> GlobalDefToRepMapTy;
 
 private:
@@ -83,10 +84,11 @@ public:
     SVFModule* buildSVFModule(Module &mod);
     SVFModule* buildSVFModule(const std::vector<std::string> &moduleNameVec);
 
-	inline SVFModule* getSVFModule() {
-		assert(svfModule && "svfModule has not been built yet!");
-		return svfModule;
-	}
+    inline SVFModule* getSVFModule()
+    {
+        assert(svfModule && "svfModule has not been built yet!");
+        return svfModule;
+    }
 
     void preProcessBCs(std::vector<std::string> &moduleNameVec);
 
@@ -114,25 +116,31 @@ public:
         return svfModule->getSVFFunction(fun);
     }
 
-    /// Fun decl --> def
-    bool hasDefinition(const Function *fun) const
+    /// Get the corresponding Function based on its name
+    inline const SVFFunction *getSVFFunction(std::string name)
     {
-        return hasDefinition(svfModule->getSVFFunction(fun));
+        Function *fun = nullptr;
+
+        for (u32_t i = 0; i < llvmModuleSet->getModuleNum(); ++i)
+        {
+            Module *mod = llvmModuleSet->getModule(i);
+            fun = mod->getFunction(name);
+            if (fun)
+            {
+                return llvmModuleSet->getSVFFunction(fun);
+            }
+        }
+        return nullptr;
     }
 
-    bool hasDefinition(const SVFFunction *fun) const
+    bool hasDefinition(const Function *fun) const
     {
         assert(fun->isDeclaration() && "not a function declaration?");
         FunDeclToDefMapTy::const_iterator it = FunDeclToDefMap.find(fun);
         return it != FunDeclToDefMap.end();
     }
 
-    const SVFFunction *getDefinition(const Function *fun) const
-    {
-        return getDefinition(svfModule->getSVFFunction(fun));
-    }
-
-    const SVFFunction *getDefinition(const SVFFunction *fun) const
+    const Function *getDefinition(const Function *fun) const
     {
         assert(fun->isDeclaration() && "not a function declaration?");
         FunDeclToDefMapTy::const_iterator it = FunDeclToDefMap.find(fun);
@@ -140,35 +148,24 @@ public:
         return it->second;
     }
 
-    /// Fun def --> decl
     bool hasDeclaration(const Function *fun) const
     {
-        return hasDeclaration(svfModule->getSVFFunction(fun));
-    }
+        if(fun->isDeclaration() && !hasDefinition(fun))
+            return false;
 
-    bool hasDeclaration(const SVFFunction *fun) const
-    {
-    	if(fun->isDeclaration() && !hasDefinition(fun))
-    		return false;
-
-    	const SVFFunction* funDef = fun;
+        const Function* funDef = fun;
         if(fun->isDeclaration() && hasDefinition(fun))
-        	funDef = getDefinition(fun);
+            funDef = getDefinition(fun);
 
-    	FunDefToDeclsMapTy::const_iterator it = FunDefToDeclsMap.find(funDef);
-    	return it != FunDefToDeclsMap.end();
+        FunDefToDeclsMapTy::const_iterator it = FunDefToDeclsMap.find(funDef);
+        return it != FunDefToDeclsMap.end();
     }
 
     const FunctionSetType& getDeclaration(const Function *fun) const
     {
-        return getDeclaration(svfModule->getSVFFunction(fun));
-    }
-
-    const FunctionSetType& getDeclaration(const SVFFunction *fun) const
-    {
-    	const SVFFunction* funDef = fun;
+        const Function* funDef = fun;
         if(fun->isDeclaration() && hasDefinition(fun))
-        	funDef = getDefinition(fun);
+            funDef = getDefinition(fun);
 
         FunDefToDeclsMapTy::const_iterator it = FunDefToDeclsMap.find(funDef);
         assert(it != FunDefToDeclsMap.end() && "does not have a function definition (body)?");
@@ -206,31 +203,10 @@ public:
         return getModuleNum() == 0;
     }
 
-    /// Returns true if all LLVM modules are compiled with ctir.
-    bool allCTir(void) const
-    {
-        // Iterate over all modules. If a single module does not have the correct ctir module flag,
-        // short-circuit and return false.
-        for (u32_t i = 0; i < getModuleNum(); ++i)
-        {
-            llvm::Metadata *ctirModuleFlag = llvmModuleSet->getModule(i)->getModuleFlag(cppUtil::ctir::derefMDName);
-            if (ctirModuleFlag == nullptr)
-            {
-                return false;
-            }
-
-            llvm::ConstantAsMetadata *flagConstMetadata = SVFUtil::dyn_cast<llvm::ConstantAsMetadata>(ctirModuleFlag);
-            ConstantInt *flagConstInt = SVFUtil::dyn_cast<ConstantInt>(flagConstMetadata->getValue());
-            if (flagConstInt->getZExtValue() != cppUtil::ctir::moduleFlagValue)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
 private:
+    std::vector<const Function *> getLLVMGlobalFunctions(
+        const GlobalVariable *global);
+
     void loadModules(const std::vector<std::string> &moduleNameVec);
     void addSVFMain();
     void initialize();

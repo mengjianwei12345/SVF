@@ -1,3 +1,25 @@
+//===- MHP.h -- May-happen-in-parallel analysis-------------//
+//
+//                     SVF: Static Value-Flow Analysis
+//
+// Copyright (C) <2013->  <Yulei Sui>
+//
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+//===----------------------------------------------------------------------===//
+
 /*
  * MHP.h
  *
@@ -10,6 +32,7 @@
 
 #include "MTA/TCT.h"
 #include "Util/SVFUtil.h"
+#include "SVF-FE/LLVMUtil.h"
 namespace SVF
 {
 
@@ -60,11 +83,12 @@ public:
     {
         return tct;
     }
-	
-	// Get CallICFGNode
-	inline CallICFGNode* getCBN(const Instruction* inst) {
-		return tct->getCallICFGNode(inst);
-	}
+
+    // Get CallICFGNode
+    inline CallICFGNode* getCBN(const Instruction* inst)
+    {
+        return tct->getCallICFGNode(inst);
+    }
 
     /// Whether the function is connected from main function in thread call graph
     bool isConnectedfromMain(const Function* fun);
@@ -115,11 +139,12 @@ public:
     void printInterleaving();
 
 private:
-	
-	inline const PTACallGraph::FunctionSet& getCallee(const Instruction* inst, PTACallGraph::FunctionSet& callees) {
+
+    inline const PTACallGraph::FunctionSet& getCallee(const Instruction* inst, PTACallGraph::FunctionSet& callees)
+    {
         tcg->getCallees(getCBN(inst), callees);
         return callees;
-	}
+    }
     /// Update non-candidate functions' interleaving.
     /// Copy interleaving threads of the entry inst to other insts.
     void updateNonCandidateFunInterleaving();
@@ -338,7 +363,8 @@ public:
         NodeID parentTid = tct->getParentThread(tid);
         const CxtThread& parentct = tct->getTCTNode(parentTid)->getCxtThread();
         const Function* parentRoutine = tct->getStartRoutineOfCxtThread(parentct);
-        return &(SVFUtil::getFunExitBB(parentRoutine)->back());
+        const SVFFunction* svfFun = LLVMModuleSet::getLLVMModuleSet()->getSVFFunction(parentRoutine);
+        return &(LLVMUtil::getFunExitBB(svfFun)->back());
     }
 
     /// Get loop for join site
@@ -380,9 +406,10 @@ private:
         return tct->getPTA()->alias(getForkedThread(forkSite), getJoinedThread(joinSite)) && isSameSCEV(forkSite,joinSite);
     }
     // Get CallICFGNode
-	inline CallICFGNode* getCBN(const Instruction* inst) {
-		return tct->getCallICFGNode(inst);
-	}
+    inline CallICFGNode* getCBN(const Instruction* inst)
+    {
+        return tct->getCallICFGNode(inst);
+    }
     /// Mark thread flags for cxtStmt
     //@{
     /// Get the flag for a cxtStmt
@@ -485,10 +512,11 @@ private:
     {
         return getTCG()->getThreadAPI()->getJoinedThread(call);
     }
-    inline const PTACallGraph::FunctionSet& getCallee(const Instruction* inst, PTACallGraph::FunctionSet& callees) {
+    inline const PTACallGraph::FunctionSet& getCallee(const Instruction* inst, PTACallGraph::FunctionSet& callees)
+    {
         getTCG()->getCallees(getCBN(inst), callees);
         return callees;
-	}
+    }
     /// ThreadCallGraph
     inline ThreadCallGraph* getTCG() const
     {

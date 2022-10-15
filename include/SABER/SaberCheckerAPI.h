@@ -2,7 +2,7 @@
 //
 //                     SVF: Static Value-Flow Analysis
 //
-// Copyright (C) <2013-2017>  <Yulei Sui>
+// Copyright (C) <2013->  <Yulei Sui>
 //
 
 // This program is free software: you can redistribute it and/or modify
@@ -54,7 +54,7 @@ public:
         CK_FCLOSE		/// File close
     };
 
-    typedef llvm::StringMap<CHECKER_TYPE> TDAPIMap;
+    typedef Map<std::string, CHECKER_TYPE> TDAPIMap;
 
 private:
     /// API map, from a string to threadAPI type

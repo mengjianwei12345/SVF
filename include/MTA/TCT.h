@@ -1,3 +1,25 @@
+//===- TCT.h -- Thread creation tree-------------//
+//
+//                     SVF: Static Value-Flow Analysis
+//
+// Copyright (C) <2013->  <Yulei Sui>
+//
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+//===----------------------------------------------------------------------===//
+
 /*
  * TCT.h
  *
@@ -20,7 +42,6 @@ namespace SVF
 {
 
 class TCTNode;
-class PTALoopInfoBuilder;
 
 
 /*
@@ -148,18 +169,21 @@ public:
         destroy();
     }
     /// Get CallICFGNode given inst
-    CallICFGNode* getCallICFGNode(const Instruction* inst) {
-		return pta->getICFG()->getCallICFGNode(inst);
-	}
-	/// Get SVFFuntion given Function 
-	const SVFFunction* getSVFFun(const Function* fun) const {
-		return LLVMModuleSet::getLLVMModuleSet()->getSVFFunction(fun);
-	}
-	/// Get SVFFModule
-	SVFModule* getSVFModule() const {
-		return pta->getModule();
-	}
-	
+    CallICFGNode* getCallICFGNode(const Instruction* inst)
+    {
+        return pta->getICFG()->getCallICFGNode(inst);
+    }
+    /// Get SVFFuntion given Function
+    const SVFFunction* getSVFFun(const Function* fun) const
+    {
+        return LLVMModuleSet::getLLVMModuleSet()->getSVFFunction(fun);
+    }
+    /// Get SVFFModule
+    SVFModule* getSVFModule() const
+    {
+        return pta->getModule();
+    }
+
     /// Get TCG
     inline ThreadCallGraph* getThreadCallGraph() const
     {
@@ -245,20 +269,22 @@ public:
     /// Whether it is a candidate function for indirect call
     inline bool isCandidateFun(const PTACallGraph::FunctionSet& callees) const
     {
-    	for(PTACallGraph::FunctionSet::const_iterator cit = callees.begin(),
-                    	ecit = callees.end(); cit!=ecit; cit++)
+        for(PTACallGraph::FunctionSet::const_iterator cit = callees.begin(),
+                ecit = callees.end(); cit!=ecit; cit++)
         {
-        	if(candidateFuncSet.find((*cit)->getLLVMFun())!=candidateFuncSet.end())
-        		return true;
+            if(candidateFuncSet.find((*cit)->getLLVMFun())!=candidateFuncSet.end())
+                return true;
         }
         return false;
     }
-	inline bool isCandidateFun(const Function* fun) const {
-		return candidateFuncSet.find(fun)!=candidateFuncSet.end();
-	}
-	inline bool isCandidateFun(const SVFFunction* fun) const {
-		return isCandidateFun(fun->getLLVMFun());
-	}
+    inline bool isCandidateFun(const Function* fun) const
+    {
+        return candidateFuncSet.find(fun)!=candidateFuncSet.end();
+    }
+    inline bool isCandidateFun(const SVFFunction* fun) const
+    {
+        return isCandidateFun(fun->getLLVMFun());
+    }
     /// Whether two functions in the same callgraph scc
     inline bool inSameCallGraphSCC(const PTACallGraphNode* src,const PTACallGraphNode* dst)
     {

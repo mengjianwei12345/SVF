@@ -2,7 +2,7 @@
 //
 //                     SVF: Static Value-Flow Analysis
 //
-// Copyright (C) <2013-2017>  <Yulei Sui>
+// Copyright (C) <2013->  <Yulei Sui>
 //
 
 // This program is free software: you can redistribute it and/or modify
@@ -28,7 +28,6 @@
  */
 
 #include "Util/Options.h"
-#include "SVF-FE/LLVMUtil.h"
 #include "SABER/LeakChecker.h"
 
 using namespace SVF;
@@ -50,7 +49,7 @@ void LeakChecker::initSrcs()
         /// if this callsite return reside in a dead function then we do not care about its leaks
         /// for example instruction `int* p = malloc(size)` is in a dead function, then program won't allocate this memory
         /// for example a customized malloc `int p = malloc()` returns an integer value, then program treat it as a system malloc
-        if(isPtrInDeadFunction(cs->getCallSite()) || !cs->getCallSite()->getType()->isPointerTy())
+        if(SymbolTableInfo::isPtrInUncalledFunction(cs->getCallSite()) || !cs->getCallSite()->getType()->isPointerTy())
             continue;
 
         PTACallGraph::FunctionSet callees;
@@ -88,7 +87,7 @@ void LeakChecker::initSrcs()
                     else
                     {
                         // exclude sources in dead functions
-                        if (isPtrInDeadFunction(cs->getCallSite()) == false)
+                        if (SymbolTableInfo::isPtrInUncalledFunction(cs->getCallSite()) == false)
                         {
                             addToSources(node);
                             addSrcToCSID(node, cs);
@@ -118,27 +117,31 @@ void LeakChecker::initSnks()
         for(PTACallGraph::FunctionSet::const_iterator cit = callees.begin(), ecit = callees.end(); cit!=ecit; cit++)
         {
             const SVFFunction* fun = *cit;
-			if (isSinkLikeFun(fun)) {
-				SVFIR::SVFVarList &arglist = it->second;
-				assert(!arglist.empty()	&& "no actual parameter at deallocation site?");
-				/// we only choose pointer parameters among all the actual parameters
-				for (SVFIR::SVFVarList::const_iterator ait = arglist.begin(),
-						aeit = arglist.end(); ait != aeit; ++ait) {
-					const PAGNode *pagNode = *ait;
-					if (pagNode->isPointer()) {
-						const SVFGNode *snk = getSVFG()->getActualParmVFGNode(pagNode, it->first);
-						addToSinks(snk);
+            if (isSinkLikeFun(fun))
+            {
+                SVFIR::SVFVarList &arglist = it->second;
+                assert(!arglist.empty()	&& "no actual parameter at deallocation site?");
+                /// we only choose pointer parameters among all the actual parameters
+                for (SVFIR::SVFVarList::const_iterator ait = arglist.begin(),
+                        aeit = arglist.end(); ait != aeit; ++ait)
+                {
+                    const PAGNode *pagNode = *ait;
+                    if (pagNode->isPointer())
+                    {
+                        const SVFGNode *snk = getSVFG()->getActualParmVFGNode(pagNode, it->first);
+                        addToSinks(snk);
 
                         // For any multi-level pointer e.g., XFree(void** pagNode) that passed into a ExtAPI::EFT_FREE_MULTILEVEL function (e.g., XFree),
                         // we will add the DstNode of a load edge, i.e., dummy = *pagNode
                         SVFStmt::SVFStmtSetTy& loads = const_cast<PAGNode*>(pagNode)->getOutgoingEdges(SVFStmt::Load);
-                        for(const SVFStmt* ld : loads){
+                        for(const SVFStmt* ld : loads)
+                        {
                             if(SVFUtil::isa<DummyValVar>(ld->getDstNode()))
                                 addToSinks(getSVFG()->getStmtVFGNode(ld));
                         }
                     }
-				}
-			}
+                }
+            }
         }
     }
 }
@@ -153,6 +156,7 @@ void LeakChecker::reportNeverFree(const SVFGNode* src)
 
 void LeakChecker::reportPartialLeak(const SVFGNode* src)
 {
+
     const CallICFGNode* cs = getSrcCSID(src);
     SVFUtil::errs() << bugMsg2("\t PartialLeak :") <<  " memory allocation at : ("
                     << getSourceLoc(cs->getCallSite()) << ")\n";

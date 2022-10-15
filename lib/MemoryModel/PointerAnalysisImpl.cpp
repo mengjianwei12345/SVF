@@ -1,3 +1,26 @@
+//===- PointerAnalysisImpl.cpp -- Pointer analysis implementation--------------------//
+//
+//                     SVF: Static Value-Flow Analysis
+//
+// Copyright (C) <2013->  <Yulei Sui>
+//
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+//===----------------------------------------------------------------------===//
+
+
 /*
  * PointerAnalysisImpl.cpp
  *
@@ -10,7 +33,7 @@
 #include "SVF-FE/CPPUtil.h"
 #include "SVF-FE/DCHG.h"
 #include "Util/Options.h"
-#include "Util/IRAnnotator.h"
+#include "SVF-FE/IRAnnotator.h"
 #include <fstream>
 #include <sstream>
 
@@ -25,9 +48,9 @@ using namespace std;
 BVDataPTAImpl::BVDataPTAImpl(SVFIR* p, PointerAnalysis::PTATY type, bool alias_check) :
     PointerAnalysis(p, type, alias_check), ptCache()
 {
-    if (type == Andersen_BASE || type == Andersen_WPA || type == AndersenWaveDiff_WPA || type == AndersenHCD_WPA || type == AndersenHLCD_WPA
-            || type == AndersenLCD_WPA || type == TypeCPP_WPA || type == FlowS_DDA || type == AndersenWaveDiffWithType_WPA
-            || type == AndersenSCD_WPA || type == AndersenSFR_WPA)
+    if (type == Andersen_BASE || type == Andersen_WPA || type == AndersenWaveDiff_WPA
+            || type == TypeCPP_WPA || type == FlowS_DDA
+            || type == AndersenSCD_WPA || type == AndersenSFR_WPA || type == CFLFICI_WPA || type == CFLFSCS_WPA)
     {
         // Only maintain reverse points-to when the analysis is field-sensitive, as objects turning
         // field-insensitive is all it is used for.
@@ -43,7 +66,7 @@ BVDataPTAImpl::BVDataPTAImpl(SVFIR* p, PointerAnalysis::PTATY type, bool alias_c
         else if (Options::ptDataBacking == PTBackingType::Persistent) ptD = new PersDiffPTDataTy(getPtCache(), false);
         else assert(false && "BVDataPTAImpl::BVDataPTAImpl: unexpected points-to backing type!");
     }
-    else if (type == FSSPARSE_WPA || type == FSTBHC_WPA)
+    else if (type == FSSPARSE_WPA)
     {
         if (Options::INCDFPTData)
         {
@@ -73,7 +96,37 @@ void BVDataPTAImpl::finalize()
 {
     normalizePointsTo();
     PointerAnalysis::finalize();
-    if (Options::ptDataBacking == PTBackingType::Persistent && Options::PStat) ptCache.printStats("bv-finalize");
+
+    if (Options::ptDataBacking == PTBackingType::Persistent && print_stat)
+    {
+        std::string moduleName(SymbolTableInfo::SymbolInfo()->getModule()->getModuleIdentifier());
+        std::vector<std::string> names = SVFUtil::split(moduleName,'/');
+        if (names.size() > 1)
+            moduleName = names[names.size() - 1];
+
+        std::string subtitle;
+
+        if(ptaTy >= Andersen_BASE && ptaTy <= Steensgaard_WPA)
+            subtitle = "Andersen's analysis bitvector";
+        else if(ptaTy >=FSDATAFLOW_WPA && ptaTy <=FSCS_WPA)
+            subtitle = "flow-sensitive analysis bitvector";
+        else if(ptaTy >=CFLFICI_WPA && ptaTy <=CFLFSCS_WPA)
+            subtitle = "CFL analysis bitvector";
+        else if(ptaTy == TypeCPP_WPA)
+            subtitle = "Type analysis bitvector";
+        else if(ptaTy >=FieldS_DDA && ptaTy <=Cxt_DDA)
+            subtitle = "DDA bitvector";
+        else
+            subtitle = "bitvector";
+
+        SVFUtil::outs() << "\n****Persistent Points-To Cache Statistics: " << subtitle << "****\n";
+        SVFUtil::outs() << "################ (program : " << moduleName << ")###############\n";
+        SVFUtil::outs().flags(std::ios::left);
+        ptCache.printStats("bitvector");
+        SVFUtil::outs() << "#######################################################" << std::endl;
+        SVFUtil::outs().flush();
+    }
+
 }
 
 /*!
@@ -120,29 +173,33 @@ void BVDataPTAImpl::writeToFile(const string& filename)
     outs() << "Storing pointer analysis results to '" << filename << "'...";
 
     error_code err;
-    ToolOutputFile F(filename.c_str(), err, llvm::sys::fs::OF_None);
-    if (err)
+    std::fstream f(filename.c_str(), std::ios_base::out);
+    if (!f.good())
     {
         outs() << "  error opening file for writing!\n";
-        F.os().clear_error();
         return;
     }
 
     // Write analysis results to file
-    for (auto it = pag->begin(), ie = pag->end(); it != ie; ++it) {
+    for (auto it = pag->begin(), ie = pag->end(); it != ie; ++it)
+    {
         NodeID var = it->first;
         const PointsTo &pts = getPts(var);
 
         stringstream ss;
-        F.os() << var << " -> { ";
-        if (pts.empty()) {
-            F.os() << " ";
-        } else {
-            for (NodeID n: pts) {
-                F.os() << n << " ";
+        f << var << " -> { ";
+        if (pts.empty())
+        {
+            f << " ";
+        }
+        else
+        {
+            for (NodeID n: pts)
+            {
+                f << n << " ";
             }
         }
-        F.os() << "}\n";
+        f << "}\n";
     }
 
 
@@ -152,13 +209,13 @@ void BVDataPTAImpl::writeToFile(const string& filename)
         PAGNode* pagNode = it->second;
         if (GepObjVar *gepObjPN = SVFUtil::dyn_cast<GepObjVar>(pagNode))
         {
-            F.os() << it->first << " ";
-            F.os() << pag->getBaseObjVar(it->first) << " ";
-            F.os() << gepObjPN->getConstantFieldIdx() << "\n";
+            f << it->first << " ";
+            f << pag->getBaseObjVar(it->first) << " ";
+            f << gepObjPN->getConstantFieldIdx() << "\n";
         }
     }
 
-    F.os() << "------\n";
+    f << "------\n";
     // Write BaseNodes insensitivity to file
     NodeBS NodeIDs;
     for (auto it = pag->begin(), ie = pag->end(); it != ie; ++it)
@@ -167,17 +224,16 @@ void BVDataPTAImpl::writeToFile(const string& filename)
         if (!isa<ObjVar>(pagNode)) continue;
         NodeID n = pag->getBaseObjVar(it->first);
         if (NodeIDs.test(n)) continue;
-        F.os() << n << " ";
-        F.os() << isFieldInsensitive(n) << "\n";
+        f << n << " ";
+        f << isFieldInsensitive(n) << "\n";
         NodeIDs.set(n);
     }
 
     // Job finish and close file
-    F.os().close();
-    if (!F.os().has_error())
+    f.close();
+    if (f.good())
     {
         outs() << "\n";
-        F.keep();
         return;
     }
 }
@@ -398,32 +454,40 @@ void BVDataPTAImpl::onTheFlyCallGraphSolve(const CallSiteToFunPtrMap& callsites,
 /*!
  * Normalize points-to information for field-sensitive analysis
  */
-void BVDataPTAImpl::normalizePointsTo() {
+void BVDataPTAImpl::normalizePointsTo()
+{
     SVFIR::MemObjToFieldsMap &memToFieldsMap = pag->getMemToFieldsMap();
     SVFIR::NodeLocationSetMap &GepObjVarMap = pag->getGepObjNodeMap();
 
     // collect each gep node whose base node has been set as field-insensitive
     NodeBS dropNodes;
-    for (auto t: memToFieldsMap){
+    for (auto t: memToFieldsMap)
+    {
         NodeID base = t.first;
         const MemObj* memObj = pag->getObject(base);
         assert(memObj && "Invalid memobj in memToFieldsMap");
-        if (memObj->isFieldInsensitive()) {
-            for (NodeID id : t.second) {
-                if (SVFUtil::isa<GepObjVar>(pag->getGNode(id))) {
+        if (memObj->isFieldInsensitive())
+        {
+            for (NodeID id : t.second)
+            {
+                if (SVFUtil::isa<GepObjVar>(pag->getGNode(id)))
+                {
                     dropNodes.set(id);
-                } else
+                }
+                else
                     assert(id == base && "Not a GepObj Node or a baseObj Node?");
             }
         }
     }
 
     // remove the collected redundant gep nodes in each pointers's pts
-    for (SVFIR::iterator nIter = pag->begin(); nIter != pag->end(); ++nIter) {
+    for (SVFIR::iterator nIter = pag->begin(); nIter != pag->end(); ++nIter)
+    {
         NodeID n = nIter->first;
 
         const PointsTo &tmpPts = getPts(n);
-        for (NodeID obj : tmpPts) {
+        for (NodeID obj : tmpPts)
+        {
             if (!dropNodes.test(obj))
                 continue;
             NodeID baseObj = pag->getBaseObjVar(obj);
@@ -434,7 +498,8 @@ void BVDataPTAImpl::normalizePointsTo() {
 
     // clear GepObjVarMap and memToFieldsMap for redundant gepnodes
     // and remove those nodes from pag
-    for (NodeID n: dropNodes) {
+    for (NodeID n: dropNodes)
+    {
         NodeID base = pag->getBaseObjVar(n);
         GepObjVar *gepNode = SVFUtil::dyn_cast<GepObjVar>(pag->getGNode(n));
         const LocationSet ls = gepNode->getLocationSet();
@@ -443,15 +508,6 @@ void BVDataPTAImpl::normalizePointsTo() {
 
         pag->removeGNode(gepNode);
     }
-}
-
-/*!
- * Return alias results based on our points-to/alias analysis
- */
-AliasResult BVDataPTAImpl::alias(const MemoryLocation &LocA,
-                                 const MemoryLocation &LocB)
-{
-    return alias(LocA.Ptr, LocB.Ptr);
 }
 
 /*!

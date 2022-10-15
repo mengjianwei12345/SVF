@@ -39,7 +39,7 @@
 namespace SVF
 {
 
-class SymbolTableBuilder 
+class SymbolTableBuilder
 {
 
 private:
@@ -47,7 +47,8 @@ private:
 
 public:
     /// Constructor
-    SymbolTableBuilder(SymbolTableInfo* si): symInfo(si){
+    SymbolTableBuilder(SymbolTableInfo* si): symInfo(si)
+    {
     }
 
     /// Start building memory model
@@ -55,6 +56,10 @@ public:
 
     /// collect the syms
     //@{
+    void collectNullPtrBlackholeSyms(const Value *val);
+
+    void collectSpecialSym(const Value* val);
+
     void collectSym(const Value *val);
 
     void collectVal(const Value *val);
@@ -89,6 +94,6 @@ public:
     u32_t getObjSize(const Type* type);
 };
 
-}
+} // End namespace SVF
 
 #endif /* SymbolTableBuilder_H_ */

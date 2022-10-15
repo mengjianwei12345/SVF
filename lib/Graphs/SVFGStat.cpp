@@ -32,6 +32,7 @@
 #include "Graphs/PTACallGraph.h"
 
 using namespace SVF;
+using namespace std;
 
 const char* MemSSAStat::TotalTimeOfConstructMemSSA = "TotalMSSATime";	///< Total time for constructing memory SSA
 const char* MemSSAStat::TimeOfGeneratingMemRegions  = "GenRegionTime";	///< Time for allocating regions
@@ -126,9 +127,7 @@ void MemSSAStat::performStat()
  */
 void MemSSAStat::printStat(string str)
 {
-
-    SVFUtil::outs() << "\n****Memory SSA Statistics****\n";
-    PTAStat::printStat(str);
+    PTAStat::printStat("Memory SSA Statistics");
 }
 
 /*!

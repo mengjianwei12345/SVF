@@ -28,10 +28,13 @@
  */
 
 #include "Graphs/CHG.h"
+#include "SVF-FE/BasicTypes.h"
 
-namespace SVF{
+namespace SVF
+{
 
-class CHGBuilder{
+class CHGBuilder
+{
 
 private:
     CHGraph* chg;
@@ -66,4 +69,5 @@ public:
     void addFuncToFuncVector(CHNode::FuncVector &v, const SVFFunction *f);
 };
 
-}
+} // End namespace SVF
+

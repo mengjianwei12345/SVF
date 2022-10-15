@@ -5,6 +5,10 @@
  *
  *  Created on: Jun 26, 2020
  *      Author: Mohamad Barbar
+ *
+ * The implementation is based on
+ * Mohamad Barbar, Yulei Sui and Shiping Chen. "Object Versioning for Flow-Sensitive Pointer Analysis".
+ * International Symposium on Code Generation and Optimization (CGO'21)
  */
 
 #ifndef VFS_H_
@@ -99,7 +103,10 @@ protected:
     virtual void updateConnectedNodes(const SVFGEdgeSetTy& newEdges) override;
 
     /// Override to do nothing. Instead, we will use propagateVersion when necessary.
-    virtual bool propAlongIndirectEdge(const IndirectSVFGEdge*) override { return false; }
+    virtual bool propAlongIndirectEdge(const IndirectSVFGEdge*) override
+    {
+        return false;
+    }
 
     /// Override since we want to assign different weights based on versioning.
     virtual void cluster(void) override;

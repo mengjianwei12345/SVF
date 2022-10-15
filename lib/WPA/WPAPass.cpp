@@ -2,7 +2,7 @@
 //
 //                     SVF: Static Value-Flow Analysis
 //
-// Copyright (C) <2013-2017>  <Yulei Sui>
+// Copyright (C) <2013->  <Yulei Sui>
 //
 
 // This program is free software: you can redistribute it and/or modify
@@ -38,9 +38,8 @@
 #include "MemoryModel/PointerAnalysisImpl.h"
 #include "WPA/WPAPass.h"
 #include "WPA/Andersen.h"
-#include "WPA/AndersenSFR.h"
+#include "WPA/AndersenPWC.h"
 #include "WPA/FlowSensitive.h"
-#include "WPA/FlowSensitiveTBHC.h"
 #include "WPA/VersionedFlowSensitive.h"
 #include "WPA/TypeAnalysis.h"
 #include "WPA/Steensgaard.h"
@@ -79,37 +78,18 @@ void WPAPass::runOnModule(SVFModule* svfModule)
 }
 
 /*!
- * We start from here
- */
-bool WPAPass::runOnModule(Module& module)
-{
-    SVFModule* svfModule = LLVMModuleSet::getLLVMModuleSet()->buildSVFModule(module);
-    runOnModule(svfModule);
-    return false;
-}
-
-/*!
  * Create pointer analysis according to a specified kind and then analyze the module.
  */
 void WPAPass::runPointerAnalysis(SVFModule* svfModule, u32_t kind)
 {
-	/// Build SVFIR
-	SVFIRBuilder builder;
-	SVFIR* pag = builder.build(svfModule);
+    /// Build SVFIR
+    SVFIRBuilder builder;
+    SVFIR* pag = builder.build(svfModule);
     /// Initialize pointer analysis.
     switch (kind)
     {
     case PointerAnalysis::Andersen_WPA:
         _pta = new Andersen(pag);
-        break;
-    case PointerAnalysis::AndersenLCD_WPA:
-        _pta = new AndersenLCD(pag);
-        break;
-    case PointerAnalysis::AndersenHCD_WPA:
-        _pta = new AndersenHCD(pag);
-        break;
-    case PointerAnalysis::AndersenHLCD_WPA:
-        _pta = new AndersenHLCD(pag);
         break;
     case PointerAnalysis::AndersenSCD_WPA:
         _pta = new AndersenSCD(pag);
@@ -125,9 +105,6 @@ void WPAPass::runPointerAnalysis(SVFModule* svfModule, u32_t kind)
         break;
     case PointerAnalysis::FSSPARSE_WPA:
         _pta = new FlowSensitive(pag);
-        break;
-    case PointerAnalysis::FSTBHC_WPA:
-        _pta = new FlowSensitiveTBHC(pag);
         break;
     case PointerAnalysis::VFS_WPA:
         _pta = new VersionedFlowSensitive(pag);

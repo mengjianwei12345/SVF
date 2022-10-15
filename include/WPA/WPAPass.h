@@ -75,12 +75,6 @@ public:
     /// Destructor
     virtual ~WPAPass();
 
-    /// Interface expose to users of our pointer analysis, given Location infos
-    virtual inline AliasResult alias(const MemoryLocation  &LocA, const MemoryLocation  &LocB)
-    {
-        return alias(LocA.Ptr, LocB.Ptr);
-    }
-
     /// Interface expose to users of our pointer analysis, given Value infos
     virtual AliasResult alias(const Value* V1,	const Value* V2);
 
@@ -105,11 +99,8 @@ public:
     /// Run pointer analysis on SVFModule
     virtual void runOnModule(SVFModule* svfModule);
 
-    /// Run pointer analysis on LLVM module
-    virtual bool runOnModule(Module& module);
-
     /// PTA name
-    virtual inline StringRef getPassName() const
+    virtual inline std::string getPassName() const
     {
         return "WPAPass";
     }

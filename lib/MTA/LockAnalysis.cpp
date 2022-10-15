@@ -1,3 +1,25 @@
+//===- LockAnalysis.cpp -- Analysis of locksets-------------//
+//
+//                     SVF: Static Value-Flow Analysis
+//
+// Copyright (C) <2013->  <Yulei Sui>
+//
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+//===----------------------------------------------------------------------===//
+
 /*
  * LocksetAnalysis.cpp
  *
@@ -10,12 +32,13 @@
 #include "MTA/MTA.h"
 #include "MTA/MTAResultValidator.h"
 #include "Util/SVFUtil.h"
-#include "MemoryModel/PTAStat.h"
+#include "Util/PTAStat.h"
 #include "MTA/LockResultValidator.h"
 
 
 using namespace SVF;
 using namespace SVFUtil;
+using namespace LLVMUtil;
 
 
 namespace SVF
@@ -60,8 +83,8 @@ void LockAnalysis::analyze()
 
     DOTIMESTAT(double lockEnd = PTAStat::getClk(true));
     DOTIMESTAT(lockTime += (lockEnd - lockStart) / TIMEINTERVAL);
-	if(Options::LockValid)
-    	validateResults();
+    if(Options::LockValid)
+        validateResults();
 }
 
 
@@ -171,6 +194,7 @@ bool LockAnalysis::intraForwardTraverse(const Instruction* lockSite, InstSet& un
 {
 
     const Function* fun = lockSite->getParent()->getParent();
+    const SVFFunction* svfFun = LLVMModuleSet::getLLVMModuleSet()->getSVFFunction(fun);
 
     InstVec worklist;
     worklist.push_back(lockSite);
@@ -179,7 +203,7 @@ bool LockAnalysis::intraForwardTraverse(const Instruction* lockSite, InstSet& un
         const Instruction *I = worklist.back();
         worklist.pop_back();
 
-        if(&(getFunExitBB(fun)->back()) == I)
+        if(&(getFunExitBB(svfFun)->back()) == I)
             return false;
 
         // Skip the visited Instructions.
@@ -218,7 +242,7 @@ bool LockAnalysis::intraBackwardTraverse(const InstSet& unlockSet, InstSet& back
     {
         const Instruction* unlockSite = *it;
         const Function* fun = unlockSite->getParent()->getParent();
-		const Instruction* entryInst = &(fun->getEntryBlock().back());
+        const Instruction* entryInst = &(fun->getEntryBlock().back());
         worklist.push_back(*it);
 
         while (!worklist.empty())
@@ -313,8 +337,8 @@ void LockAnalysis::handleCallRelation(CxtLockProc& clp, const PTACallGraphEdge* 
         addCxtLock(cxt,cs.getInstruction());
         return;
     }
-	const SVFFunction* svfcallee = cgEdge->getDstNode()->getFunction();
-	const Function* callee = svfcallee->getLLVMFun();
+    const SVFFunction* svfcallee = cgEdge->getDstNode()->getFunction();
+    const Function* callee = svfcallee->getLLVMFun();
     pushCxt(cxt, cs.getInstruction(), callee);
 
     CxtLockProc newclp(cxt, svfcallee);
@@ -406,7 +430,7 @@ void LockAnalysis::handleFork(const CxtStmt& cts)
 {
     const CallInst* call = SVFUtil::cast<CallInst>(cts.getStmt());
     const CallStrCxt& curCxt = cts.getContext();
-	CallICFGNode* cbn = tct->getCallICFGNode(call);
+    CallICFGNode* cbn = tct->getCallICFGNode(call);
     if(getTCG()->hasThreadForkEdge(cbn))
     {
         for (ThreadCallGraph::ForkEdgeSet::const_iterator cgIt = getTCG()->getForkEdgeBegin(cbn),
@@ -429,7 +453,7 @@ void LockAnalysis::handleCall(const CxtStmt& cts)
 
     const CallInst* call = SVFUtil::cast<CallInst>(cts.getStmt());
     const CallStrCxt& curCxt = cts.getContext();
-	CallICFGNode* cbn = tct->getCallICFGNode(call);
+    CallICFGNode* cbn = tct->getCallICFGNode(call);
     if (getTCG()->hasCallGraphEdge(cbn))
     {
         for (PTACallGraph::CallGraphEdgeSet::const_iterator cgIt = getTCG()->getCallEdgeBegin(cbn), ecgIt = getTCG()->getCallEdgeEnd(cbn);
@@ -453,9 +477,9 @@ void LockAnalysis::handleRet(const CxtStmt& cts)
 
     const Instruction* curInst = cts.getStmt();
     const CallStrCxt& curCxt = cts.getContext();
-	const SVFFunction* svffun = tct->getSVFFun(curInst->getParent()->getParent());
+    const SVFFunction* svffun = tct->getSVFFun(curInst->getParent()->getParent());
     PTACallGraphNode* curFunNode = getTCG()->getCallGraphNode(svffun);
-    
+
     for (PTACallGraphNode::const_iterator it = curFunNode->getInEdges().begin(), eit = curFunNode->getInEdges().end(); it != eit; ++it)
     {
         PTACallGraphEdge* edge = *it;
@@ -520,7 +544,7 @@ void LockAnalysis::pushCxt(CallStrCxt& cxt, const Instruction* call, const Funct
     const SVFFunction* svfcaller = tct->getSVFFun(caller);
     CallICFGNode* cbn = tct->getCallICFGNode(call);
     CallSiteID csId = getTCG()->getCallSiteID(cbn, svfcallee);
-	
+
 //    /// handle calling context for candidate functions only
 //    if (isLockCandidateFun(caller) == false)
 //        return;
@@ -567,12 +591,12 @@ bool LockAnalysis::isProtectedByCommonLock(const Instruction *i1, const Instruct
 {
     numOfTotalQueries++;
     bool commonlock = false;
-    DOTIMESTAT(double queryStart = PTAStat::getClk());
+    DOTIMESTAT(double queryStart = PTAStat::getClk(true));
     if (isInsideIntraLock(i1) && isInsideIntraLock(i2))
         commonlock = isProtectedByCommonCILock(i1,i2) ;
     else
         commonlock = isProtectedByCommonCxtLock(i1,i2);
-    DOTIMESTAT(double queryEnd = PTAStat::getClk());
+    DOTIMESTAT(double queryEnd = PTAStat::getClk(true));
     DOTIMESTAT(lockQueriesTime += (queryEnd - queryStart) / TIMEINTERVAL);
     return commonlock;
 }
@@ -643,7 +667,7 @@ bool LockAnalysis::isProtectedByCommonCxtLock(const Instruction *i1, const Instr
  */
 bool LockAnalysis::isInSameSpan(const Instruction *i1, const Instruction *i2)
 {
-    DOTIMESTAT(double queryStart = PTAStat::getClk());
+    DOTIMESTAT(double queryStart = PTAStat::getClk(true));
 
     bool sameSpan = false;
     if (isInsideIntraLock(i1) && isInsideIntraLock(i2))
@@ -651,7 +675,7 @@ bool LockAnalysis::isInSameSpan(const Instruction *i1, const Instruction *i2)
     else
         sameSpan = isInSameCSSpan(i1, i2);
 
-    DOTIMESTAT(double queryEnd = PTAStat::getClk());
+    DOTIMESTAT(double queryEnd = PTAStat::getClk(true));
     DOTIMESTAT(lockQueriesTime += (queryEnd - queryStart) / TIMEINTERVAL);
     return sameSpan;
 }
@@ -721,7 +745,7 @@ void LockAnalysis::validateResults()
     // Initialize the validator and perform validation.
     LockResultValidator lockvalidator(this);
     lockvalidator.analyze();
-    
+
     RaceValidator validator(this);
     validator.init(tct->getSVFModule());
     validator.analyze();

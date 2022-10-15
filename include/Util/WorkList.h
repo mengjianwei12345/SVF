@@ -58,7 +58,7 @@ class List
     class ListNode
     {
     public:
-        ListNode(Data d)
+        ListNode(const Data &d)
         {
             data = d;
             next = nullptr;
@@ -67,7 +67,7 @@ class List
         ~ListNode() {}
 
         Data data;
-        ListNode* next;
+        ListNode *next;
     };
 
     typedef Set<Data> DataSet;
@@ -87,16 +87,16 @@ public:
         return (head == nullptr);
     }
 
-    inline bool find(Data data) const
+    inline bool find(const Data &data) const
     {
-        return (nodeSet.find(data) == nodeSet.end() ? false : true);
+        return nodeSet.find(data) != nodeSet.end();
     }
 
-    void push(Data data)
+    void push(const Data &data)
     {
         if (nodeSet.find(data) == nodeSet.end())
         {
-            Node* new_node = new Node(data);
+            Node *new_node = new Node(data);
             if (head == nullptr)
                 head = new_node;// the list is empty
             else
@@ -109,12 +109,12 @@ public:
     {
         assert(head != nullptr && "list is empty");
         /// get node from list head
-        Node* head_node = head;
+        Node *head_node = head;
 
         /// change list head to the next node
         head = head->next;
         if (head == nullptr)
-            tail = nullptr;	/// the last node is popped.
+            tail = nullptr;    /// the last node is popped.
 
         Data data = head_node->data;
         nodeSet.erase(data);
@@ -124,8 +124,8 @@ public:
 
 private:
     DataSet nodeSet;
-    Node* head;
-    Node* tail;
+    Node *head;
+    Node *tail;
 };
 
 /**
@@ -148,17 +148,23 @@ public:
         return data_list.empty();
     }
 
-    inline bool find(Data data) const
+    inline u32_t size() const
     {
-        return (data_set.find(data) == data_set.end() ? false : true);
+        assert(data_list.size() == data_set.size() && "list and set must be the same size!");
+        return data_list.size();
+    }
+
+    inline bool find(const Data &data) const
+    {
+        return data_set.find(data) != data_set.end();
     }
 
     /**
      * Push a data into the work list.
      */
-    inline bool push(Data data)
+    inline bool push(const Data &data)
     {
-        if (data_set.find(data) == data_set.end())
+        if (!find(data))
         {
             data_list.push_back(data);
             data_set.insert(data);
@@ -166,6 +172,26 @@ public:
         }
         else
             return false;
+    }
+
+    /**
+     * Remove a data from the END of work list, no return value
+     */
+    inline void removeFront()
+    {
+        assert(!empty() && "work list is empty");
+        data_set.erase(front());
+        data_list.pop_front();
+    }
+
+    /**
+     * Get reference of top data from the END of work list.
+     */
+    inline Data &front()
+    {
+        assert(!empty() && "work list is empty");
+        Data &data = data_list.front();
+        return data;
     }
 
     /**
@@ -190,8 +216,8 @@ public:
     }
 
 private:
-    DataSet data_set;	///< store all data in the work list.
-    DataDeque data_list;	///< work list using std::vector.
+    DataSet data_set;    ///< store all data in the work list.
+    DataDeque data_list;    ///< work list using std::vector.
 };
 
 /**
@@ -214,17 +240,23 @@ public:
         return data_list.empty();
     }
 
-    inline bool find(Data data) const
+    inline u32_t size() const
     {
-        return (data_set.find(data) == data_set.end() ? false : true);
+        assert(data_list.size() == data_set.size() && "list and set must be the same size!");
+        return data_list.size();
+    }
+
+    inline bool find(const Data &data) const
+    {
+        return data_set.find(data) != data_set.end();;
     }
 
     /**
      * Push a data into the work list.
      */
-    inline bool push(Data data)
+    inline bool push(const Data &data)
     {
-        if (data_set.find(data) == data_set.end())
+        if (!find(data))
         {
             data_list.push_back(data);
             data_set.insert(data);
@@ -246,6 +278,26 @@ public:
         return data;
     }
 
+    /**
+     * Remove a data from the END of work list, no return value
+     */
+    inline void removeBack()
+    {
+        assert(!empty() && "work list is empty");
+        data_set.erase(back());
+        data_list.pop_back();
+    }
+
+    /**
+     * Get reference of top data from the END of work list.
+     */
+    inline Data &back()
+    {
+        assert(!empty() && "work list is empty");
+        Data &data = data_list.back();
+        return data;
+    }
+
     /*!
      * Clear all the data
      */
@@ -256,8 +308,8 @@ public:
     }
 
 private:
-    DataSet data_set;	///< store all data in the work list.
-    DataVector data_list;	///< work list using std::vector.
+    DataSet data_set;    ///< store all data in the work list.
+    DataVector data_list;    ///< work list using std::vector.
 };
 
 } // End namespace SVF

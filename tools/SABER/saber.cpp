@@ -31,6 +31,8 @@
 #include "SABER/FileChecker.h"
 #include "SABER/DoubleFreeChecker.h"
 #include "Util/Options.h"
+#include "Util/Z3Expr.h"
+
 
 using namespace llvm;
 using namespace SVF;
@@ -53,7 +55,7 @@ int main(int argc, char ** argv)
     int arg_num = 0;
     char **arg_value = new char*[argc];
     std::vector<std::string> moduleNameVec;
-    SVFUtil::processArguments(argc, argv, arg_num, arg_value, moduleNameVec);
+    LLVMUtil::processArguments(argc, argv, arg_num, arg_value, moduleNameVec);
     cl::ParseCommandLineOptions(arg_num, arg_value,
                                 "Source-Sink Bug Detector\n");
 

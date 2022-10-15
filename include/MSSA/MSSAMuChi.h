@@ -2,7 +2,7 @@
 //
 //                     SVF: Static Value-Flow Analysis
 //
-// Copyright (C) <2013-2017>  <Yulei Sui>
+// Copyright (C) <2013->  <Yulei Sui>
 //
 
 // This program is free software: you can redistribute it and/or modify
@@ -183,7 +183,7 @@ public:
     //@}
 
     /// Return load instruction
-    inline const LoadStmt* getLoadInst() const
+    inline const LoadStmt* getLoadStmt() const
     {
         return inst;
     }
@@ -482,7 +482,7 @@ public:
     }
 
     /// Get store instruction
-    inline const StoreStmt* getStoreInst() const
+    inline const StoreStmt* getStoreStmt() const
     {
         return inst;
     }
@@ -716,6 +716,7 @@ public:
     }
 };
 
+std::ostream& operator<<(std::ostream &o, const MRVer& mrver);
 } // End namespace SVF
 
 #endif /* MSSAMUCHI_H_ */

@@ -1,3 +1,25 @@
+//===- DDAVFSolver.h -- Demand-driven analysis value-flow solver------------//
+//
+//                     SVF: Static Value-Flow Analysis
+//
+// Copyright (C) <2013->  <Yulei Sui>
+//
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+//===----------------------------------------------------------------------===//
+
 /*
  * DDAVFSolver.h
  *
@@ -400,11 +422,11 @@ protected:
     {
         DPIm dpm(oldDpm);
         dpm.setLocVar(edge->getSrcNode(),ptr);
-        DOTIMESTAT(double start = DDAStat::getClk());
+        DOTIMESTAT(double start = DDAStat::getClk(true));
         /// handle context-/path- sensitivity
         if(handleBKCondition(dpm,edge)==false)
         {
-            DOTIMESTAT(ddaStat->_TotalTimeOfBKCondition += DDAStat::getClk() - start);
+            DOTIMESTAT(ddaStat->_TotalTimeOfBKCondition += DDAStat::getClk(true) - start);
             DBOUT(DDDA, SVFUtil::outs() << "\t!!! infeasible path svfgNode: " << edge->getDstID() << " --| " << edge->getSrcID() << "\n");
             DOSTAT(ddaStat->_NumOfInfeasiblePath++);
             return;
@@ -448,10 +470,10 @@ protected:
         assert(obj && "object not found!!");
         if(obj->isStack())
         {
-            if(const AllocaInst* local = SVFUtil::dyn_cast<AllocaInst>(obj->getValue()))
+            if(const Function* fun = _pag->getGNode(id)->getFunction())
             {
-                const SVFFunction* fun = LLVMModuleSet::getLLVMModuleSet()->getSVFFunction(local->getFunction());
-                return _callGraphSCC->isInCycle(_callGraph->getCallGraphNode(fun)->getId());
+                const SVFFunction* svffun = LLVMModuleSet::getLLVMModuleSet()->getSVFFunction(fun);
+                return _callGraphSCC->isInCycle(_callGraph->getCallGraphNode(svffun)->getId());
             }
         }
         return false;
@@ -540,9 +562,9 @@ protected:
     {
         if (unionDDAPts(dpm, pts))
         {
-            DOSTAT(double start = DDAStat::getClk());
+            DOSTAT(double start = DDAStat::getClk(true));
             reCompute(dpm);
-            DOSTAT(ddaStat->_AnaTimeCyclePerQuery += DDAStat::getClk() - start);
+            DOSTAT(ddaStat->_AnaTimeCyclePerQuery += DDAStat::getClk(true) - start);
         }
     }
     virtual inline const CPtSet& getCachedTLPointsTo(const DPIm& dpm)

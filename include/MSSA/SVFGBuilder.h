@@ -2,7 +2,7 @@
 //
 //                     SVF: Static Value-Flow Analysis
 //
-// Copyright (C) <2013-2017>  <Yulei Sui>
+// Copyright (C) <2013->  <Yulei Sui>
 //
 
 // This program is free software: you can redistribute it and/or modify
@@ -35,23 +35,6 @@
 
 namespace SVF
 {
-
-/*!
- * Dominator frontier used in MSSA
- */
-class MemSSADF : public DominanceFrontier
-{
-public:
-    MemSSADF() : DominanceFrontier()
-    {}
-
-    bool runOnDT(DominatorTree& dt)
-    {
-        releaseMemory();
-        analyze(dt);
-        return false;
-    }
-};
 
 /*!
  * SVFG Builder

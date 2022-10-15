@@ -17,6 +17,7 @@
 #include "Util/SVFBasicTypes.h"
 #include "Util/BitVector.h"
 #include "Util/CoreBitVector.h"
+#include "Util/SparseBitVector.h"
 
 namespace SVF
 {
@@ -124,8 +125,14 @@ public:
     /// If not, remaps.
     void checkAndRemap(void);
 
-    const_iterator begin(void) const { return PointsToIterator(this); }
-    const_iterator end(void) const { return PointsToIterator(this, true); }
+    const_iterator begin(void) const
+    {
+        return PointsToIterator(this);
+    }
+    const_iterator end(void) const
+    {
+        return PointsToIterator(this, true);
+    }
 
     MappingPtr getNodeMapping(void) const;
 
@@ -156,7 +163,7 @@ private:
     union
     {
         /// Sparse bit vector backing.
-        SparseBitVector sbv;
+        SparseBitVector<> sbv;
         /// Core bit vector backing.
         CoreBitVector cbv;
         /// Bit vector backing.
@@ -199,7 +206,7 @@ public:
         const PointsToIterator operator++(int);
 
         /// Dereference: *it.
-        const u32_t operator*(void) const;
+        u32_t operator*(void) const;
 
         /// Equality: *this == rhs.
         bool operator==(const PointsToIterator &rhs) const;
@@ -217,7 +224,7 @@ public:
         /// TODO: std::variant when we move to C++17.
         union
         {
-            SparseBitVector::iterator sbvIt;
+            SparseBitVector<>::iterator sbvIt;
             CoreBitVector::iterator cbvIt;
             BitVector::iterator bvIt;
         };
@@ -233,7 +240,7 @@ PointsTo operator&(const PointsTo &lhs, const PointsTo &rhs);
 /// Returns a new lhs - rhs.
 PointsTo operator-(const PointsTo &lhs, const PointsTo &rhs);
 
-};
+} // End namespace SVF
 
 template <>
 struct std::hash<SVF::PointsTo>

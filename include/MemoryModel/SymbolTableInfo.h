@@ -46,7 +46,7 @@ class StInfo;
  */
 class SymbolTableInfo
 {
-friend class SymbolTableBuilder;
+    friend class SymbolTableBuilder;
 
 public:
 
@@ -81,9 +81,6 @@ public:
     //@}
 
 private:
-    /// Data layout on a target machine
-    static DataLayout *dl;
-
     ValueToIDMapTy valSymMap;	///< map a value to its sym id
     ValueToIDMapTy objSymMap;	///< map a obj reference to its sym id
     FunToIDMapTy returnSymMap;		///< return  map
@@ -156,27 +153,23 @@ public:
     {
         return mod;
     }
-        /// Module
+    /// Module
     inline void setModule(SVFModule* m)
     {
         mod = m;
     }
 
-    /// Get target machine data layout
-    inline static DataLayout* getDataLayout(Module* mod)
-    {
-        if(dl==nullptr)
-            return dl = new DataLayout(mod);
-        return dl;
-    }
-
     /// special value
     // @{
     static bool isNullPtrSym(const Value *val);
-
     static bool isBlackholeSym(const Value *val);
-
-    bool isConstantObjSym(const Value *val);
+    static bool isArgOfUncalledFunction(const Value *val);
+    static bool isReturn(const Instruction *inst);
+    static bool isPtrInUncalledFunction (const Value * value);
+    static const u32_t getBBSuccessorNum(const BasicBlock *bb);
+    static const Type* getPtrElementType(const PointerType* pty);
+    static const u32_t getBBSuccessorPos(const BasicBlock *BB, const BasicBlock *Succ);
+    static const u32_t getBBPredecessorPos(const BasicBlock *BB, const BasicBlock *Pred);
 
     static inline bool isBlkPtr(NodeID id)
     {
@@ -238,28 +231,9 @@ public:
 
     /// Get different kinds of syms
     //@{
-    SymID getValSym(const Value *val)
-    {
+    SymID getValSym(const Value *val);
 
-        if(isNullPtrSym(val))
-            return nullPtrSymID();
-        else if(isBlackholeSym(val))
-            return blkPtrSymID();
-        else
-        {
-            ValueToIDMapTy::const_iterator iter =  valSymMap.find(val);
-            assert(iter!=valSymMap.end() &&"value sym not found");
-            return iter->second;
-        }
-    }
-
-    inline bool hasValSym(const Value* val)
-    {
-        if (isNullPtrSym(val) || isBlackholeSym(val))
-            return true;
-        else
-            return (valSymMap.find(val) != valSymMap.end());
-    }
+    bool hasValSym(const Value* val);
 
     inline SymID getObjSym(const Value *val) const
     {
@@ -290,7 +264,7 @@ public:
     }
     //@}
 
- 
+
     /// Statistics
     //@{
     inline u32_t getTotalSymNum() const
@@ -401,7 +375,7 @@ protected:
 /*!
  * Memory object symbols or MemObj (address-taken variables in LLVM-based languages)
  */
-class MemObj 
+class MemObj
 {
 
 private:
@@ -439,8 +413,11 @@ public:
     /// Get obj type
     const Type* getType() const;
 
-    /// Get the number of elements of this object 
+    /// Get the number of elements of this object
     u32_t getNumOfElements() const;
+
+    /// Set the number of elements of this object
+    void setNumOfElements(u32_t num);
 
     /// Get max field offset limit
     u32_t getMaxFieldOffsetLimit() const;
@@ -505,11 +482,11 @@ private:
     /// All field infos after flattening a struct
     std::vector<const Type*> finfo;
     /// stride represents the number of repetitive elements if this StInfo represent an ArrayType. stride is 1 by default.
-    u32_t stride; 
+    u32_t stride;
     /// number of elements after flattenning (including array elements)
-    u32_t numOfFlattenElements; 
+    u32_t numOfFlattenElements;
     /// number of fields after flattenning (ignoring array elements)
-    u32_t numOfFlattenFields; 
+    u32_t numOfFlattenFields;
     /// Type vector of fields
     std::vector<const Type*> flattenElementTypes;
     /// Max field limit
@@ -563,16 +540,19 @@ public:
     }
 
     /// Return number of elements after flattenning (including array elements)
-    inline u32_t getNumOfFlattenElements() const {
+    inline u32_t getNumOfFlattenElements() const
+    {
         return numOfFlattenElements;
     }
 
     /// Return the number of fields after flattenning (ignoring array elements)
-    inline u32_t getNumOfFlattenFields() const {
+    inline u32_t getNumOfFlattenFields() const
+    {
         return numOfFlattenFields;
     }
     /// Return the stride
-    inline u32_t getStride() const{
+    inline u32_t getStride() const
+    {
         return stride;
     }
 };
@@ -582,7 +562,7 @@ public:
  */
 class ObjTypeInfo
 {
-friend class SymbolTableBuilder;
+    friend class SymbolTableBuilder;
 public:
     typedef enum
     {
@@ -622,7 +602,7 @@ public:
     virtual ~ObjTypeInfo()
     {
     }
-    
+
     /// Get LLVM type
     inline const Type* getType() const
     {
@@ -641,14 +621,14 @@ public:
         maxOffsetLimit = limit;
     }
 
-    /// Set the number of elements of this object 
+    /// Set the number of elements of this object
     inline void setNumOfElements(u32_t num)
     {
         elemNum = num;
         setMaxFieldOffsetLimit(num);
     }
 
-    /// Get the number of elements of this object 
+    /// Get the number of elements of this object
     inline u32_t getNumOfElements() const
     {
         return elemNum;

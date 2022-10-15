@@ -7,7 +7,7 @@
  *      Author: mbarbar
  */
 
-#include "SVF-FE/LLVMUtil.h"
+#include "Util/SVFUtil.h"
 #include "WPA/WPAStat.h"
 #include "WPA/VersionedFlowSensitive.h"
 #include "MemoryModel/PointsTo.h"
@@ -17,19 +17,19 @@ using namespace SVFUtil;
 
 void VersionedFlowSensitiveStat::clearStat()
 {
-     _NumVersions         = 0;
-     _MaxVersions         = 0;
-     _NumNonEmptyVersions = 0;
-     _NumSingleVersion    = 0;
-     _NumUsedVersions     = 0;
-     _NumEmptyVersions    = 0;
-     _MaxPtsSize          = 0;
-     _MaxTopLvlPtsSize    = 0;
-     _MaxVersionPtsSize   = 0;
-     _TotalPtsSize        = 0;
-     _AvgPtsSize          = 0.0;
-     _AvgTopLvlPtsSize    = 0.0;
-     _AvgVersionPtsSize   = 0.0;
+    _NumVersions         = 0;
+    _MaxVersions         = 0;
+    _NumNonEmptyVersions = 0;
+    _NumSingleVersion    = 0;
+    _NumUsedVersions     = 0;
+    _NumEmptyVersions    = 0;
+    _MaxPtsSize          = 0;
+    _MaxTopLvlPtsSize    = 0;
+    _MaxVersionPtsSize   = 0;
+    _TotalPtsSize        = 0;
+    _AvgPtsSize          = 0.0;
+    _AvgTopLvlPtsSize    = 0.0;
+    _AvgVersionPtsSize   = 0.0;
 }
 
 void VersionedFlowSensitiveStat::performStat()
@@ -65,12 +65,13 @@ void VersionedFlowSensitiveStat::performStat()
         }
     }
 
+    PTNumStatMap["FIObjNum"] = fiObjNumber;
+    PTNumStatMap["FSObjNum"] = fsObjNumber;
+
     unsigned numOfCopy = 0;
     unsigned numOfStore = 0;
-    unsigned numOfNode = 0;
     for (SVFG::iterator it = vfspta->svfg->begin(); it != vfspta->svfg->end(); ++it)
     {
-        numOfNode++;
         SVFGNode* svfgNode = it->second;
         if (SVFUtil::isa<CopySVFGNode>(svfgNode)) numOfCopy++;
         else if (SVFUtil::isa<StoreSVFGNode>(svfgNode)) numOfStore++;
@@ -78,7 +79,7 @@ void VersionedFlowSensitiveStat::performStat()
 
     PTAStat::performStat();
 
-    timeStatMap[TotalAnalysisTime]    = (endTime - startTime)/TIMEINTERVAL;
+    timeStatMap["TotalTime"]    = (endTime - startTime)/TIMEINTERVAL;
     timeStatMap["SolveTime"]          = vfspta->solveTime;
     timeStatMap["SCCTime"]            = vfspta->sccTime;
     timeStatMap["ProcessTime"]        = vfspta->processTime;
@@ -97,13 +98,13 @@ void VersionedFlowSensitiveStat::performStat()
     timeStatMap["PrelabelingTime"]    = vfspta->prelabelingTime;
     timeStatMap["VersionPropTime"]    = vfspta->versionPropTime;
 
-    PTNumStatMap[TotalNumOfPointers]  = pag->getValueNodeNum() + pag->getFieldValNodeNum();
-    PTNumStatMap[TotalNumOfObjects]   = pag->getObjectNodeNum() + pag->getFieldObjNodeNum();
+    PTNumStatMap["TotalPointers"]  = pag->getValueNodeNum() + pag->getFieldValNodeNum();
+    PTNumStatMap["TotalObjects"]   = pag->getObjectNodeNum() + pag->getFieldObjNodeNum();
 
-    PTNumStatMap[NumOfPointers]         = pag->getValueNodeNum();
-    PTNumStatMap[NumOfMemObjects]       = pag->getObjectNodeNum();
-    PTNumStatMap[NumOfGepFieldPointers] = pag->getFieldValNodeNum();
-    PTNumStatMap[NumOfGepFieldObjects]  = pag->getFieldObjNodeNum();
+    PTNumStatMap["Pointers"]         = pag->getValueNodeNum();
+    PTNumStatMap["MemObjects"]       = pag->getObjectNodeNum();
+    PTNumStatMap["DummyFieldPtrs"] = pag->getFieldValNodeNum();
+    PTNumStatMap["FieldObjs"]  = pag->getFieldObjNodeNum();
 
     PTNumStatMap["TotalVersions"]     = _NumVersions;
     PTNumStatMap["MaxVersionsForObj"] = _MaxVersions;
@@ -112,12 +113,12 @@ void VersionedFlowSensitiveStat::performStat()
     PTNumStatMap["TotalExistingVPts"] = _NumUsedVersions;
     PTNumStatMap["TotalSingleVObjs"]  = _NumSingleVersion;
 
-    PTNumStatMap[NumOfCopys]  = numOfCopy;
-    PTNumStatMap[NumOfStores] = numOfStore;
+    PTNumStatMap["CopysNum"]  = numOfCopy;
+    PTNumStatMap["StoresNum"] = numOfStore;
 
-    PTNumStatMap[NumOfIterations] = vfspta->numOfIteration;
+    PTNumStatMap["SolveIterations"] = vfspta->numOfIteration;
 
-    PTNumStatMap[NumOfIndirectEdgeSolved] = vfspta->getNumOfResolvedIndCallEdge();
+    PTNumStatMap["IndEdgeSolved"] = vfspta->getNumOfResolvedIndCallEdge();
 
     PTNumStatMap["StrongUpdates"] = vfspta->svfgHasSU.count();
 
@@ -156,7 +157,10 @@ void VersionedFlowSensitiveStat::versionStat(void)
     _MaxVersions = 0;
 
     u32_t totalVersionPtsSize = 0;
-    for (const VersionedFlowSensitive::LocVersionMap *lvm : { &vfspta->consume, &vfspta->yield })
+    for (const VersionedFlowSensitive::LocVersionMap *lvm :
+            {
+                &vfspta->consume, &vfspta->yield
+            })
     {
         for (const VersionedFlowSensitive::ObjToVersionMap  &lov : *lvm)
         {

@@ -173,11 +173,6 @@ public:
         return getSVFGNode(getDef(pagNode));
     }
 
-    /// Return the corresponding SVFGNodes to a given llvm::Value.
-    /// return an empty list, if the no mapping is possible
-    std::set<const SVFGNode*> fromValue(const llvm::Value* value) const;
-
-
     /// Perform statistics
     void performStat();
 
@@ -251,7 +246,8 @@ public:
     }
 
     /// Return total SVFG node number
-    inline u32_t getSVFGNodeNum() const {
+    inline u32_t getSVFGNodeNum() const
+    {
         return nodeNum;
     }
 
@@ -265,6 +261,10 @@ public:
         addGNode(dvpNode->getId(), dvpNode);
         return dvpNode;
     }
+
+    virtual void writeToFile(const std::string& filename);
+    virtual void readFile(const std::string& filename);
+    virtual MRVer* getMRVERFromString(const std::string& input);
 
 protected:
     /// Add indirect def-use edges of a memory region between two statements,
@@ -428,8 +428,8 @@ protected:
     }
 
     /// Add memory SSA PHI SVFG node
-    inline void addIntraMSSAPHISVFGNode(ICFGNode* BlockICFGNode, const Map<u32_t,const MRVer*>::const_iterator opVerBegin, 
-    const  Map<u32_t,const MRVer*>::const_iterator opVerEnd, const MRVer* resVer, const NodeID nodeId)
+    inline void addIntraMSSAPHISVFGNode(ICFGNode* BlockICFGNode, const Map<u32_t,const MRVer*>::const_iterator opVerBegin,
+                                        const  Map<u32_t,const MRVer*>::const_iterator opVerEnd, const MRVer* resVer, const NodeID nodeId)
     {
         IntraMSSAPHISVFGNode* sNode = new IntraMSSAPHISVFGNode(nodeId, resVer);
         addSVFGNode(sNode, BlockICFGNode);

@@ -1,4 +1,4 @@
-//===- Andersen.h -- Field-sensitive Andersen's pointer analysis-------------//
+//===- TypeAnalysis.cpp -- Fast type-based analysis without pointer analysis------//
 //
 //                     SVF: Static Value-Flow Analysis
 //
@@ -32,7 +32,7 @@
 #include "SVF-FE/ICFGBuilder.h"
 #include "Graphs/CHG.h"
 #include "WPA/TypeAnalysis.h"
-#include "MemoryModel/PTAStat.h"
+#include "Util/PTAStat.h"
 #include "Graphs/ICFGStat.h"
 #include "Graphs/VFG.h"
 
@@ -45,8 +45,8 @@ using namespace std;
 /// Initialize analysis
 void TypeAnalysis::initialize()
 {
-	AndersenBase::initialize();
-    if (Options::GenICFG)
+    AndersenBase::initialize();
+    if (Options::DumpICFG)
     {
         icfg = SVFIR::getPAG()->getICFG();
         icfg->dump("icfg_initial");
@@ -166,6 +166,7 @@ void TypeAnalysis::dumpCHAStats()
     outs() << "vtblnum:\t" << vtblnum << '\n';
     outs() << "vtbl_average:\t" << (double)(vfunc_total)/vtblnum << '\n';
     outs() << "vtbl_max:\t" << vtbl_max << '\n';
+    outs() << "pure_abstract:\t" << pure_abstract << '\n';
 }
 
 

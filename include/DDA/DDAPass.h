@@ -1,3 +1,25 @@
+//===- DDAPass.h -- Demand-driven analysis driver pass-------------//
+//
+//                     SVF: Static Value-Flow Analysis
+//
+// Copyright (C) <2013->  <Yulei Sui>
+//
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+//===----------------------------------------------------------------------===//
+
 /*
  * @file: DDAPass.h
  * @author: Yulei Sui
@@ -34,12 +56,6 @@ public:
     DDAPass() : _pta(nullptr), _client(nullptr) {}
     ~DDAPass();
 
-    /// Interface expose to users of our pointer analysis, given Location infos
-    virtual inline AliasResult alias(const MemoryLocation &LocA, const MemoryLocation &LocB)
-    {
-        return alias(LocA.Ptr, LocB.Ptr);
-    }
-
     /// Interface expose to users of our pointer analysis, given Value infos
     virtual AliasResult alias(const Value* V1,	const Value* V2);
 
@@ -49,14 +65,11 @@ public:
     /// We start from here
     virtual void runOnModule(SVFModule* module);
 
-    /// We start from here
-    virtual bool runOnModule(Module& module);
-
     /// Select a client
     virtual void selectClient(SVFModule* module);
 
     /// Pass name
-    virtual inline StringRef getPassName() const
+    virtual inline std::string getPassName() const
     {
         return "DDAPass";
     }

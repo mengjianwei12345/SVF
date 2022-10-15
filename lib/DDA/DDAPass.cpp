@@ -1,3 +1,26 @@
+//===- DDAPass.cpp -- Demand-driven analysis driver pass-------------//
+//
+//                     SVF: Static Value-Flow Analysis
+//
+// Copyright (C) <2013->  <Yulei Sui>
+//
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+//===----------------------------------------------------------------------===//
+
+
 /*
  * @file: DDAPass.cpp
  * @author: Yulei Sui
@@ -18,6 +41,7 @@
 
 using namespace SVF;
 using namespace SVFUtil;
+using namespace std;
 
 char DDAPass::ID = 0;
 
@@ -32,7 +56,7 @@ DDAPass::~DDAPass()
 void DDAPass::runOnModule(SVFModule* module)
 {
     /// initialization for llvm alias analyzer
-    //InitializeAliasAnalysis(this, SymbolTableInfo::getDataLayout(&module));
+    //InitializeAliasAnalysis(this, getDataLayout(&module));
 
     selectClient(module);
 
@@ -42,13 +66,6 @@ void DDAPass::runOnModule(SVFModule* module)
         if (Options::DDASelected.isSet(i))
             runPointerAnalysis(module, i);
     }
-}
-
-bool DDAPass::runOnModule(Module& module)
-{
-    SVFModule* svfModule = LLVMModuleSet::getLLVMModuleSet()->buildSVFModule(module);
-    runOnModule(svfModule);
-    return false;
 }
 
 /// select a client to initialize queries
@@ -91,8 +108,8 @@ void DDAPass::selectClient(SVFModule* module)
 void DDAPass::runPointerAnalysis(SVFModule* module, u32_t kind)
 {
 
-	SVFIRBuilder builder;
-	SVFIR* pag = builder.build(module);
+    SVFIRBuilder builder;
+    SVFIR* pag = builder.build(module);
 
     ContextCond::setMaxPathLen(Options::MaxPathLen);
     ContextCond::setMaxCxtLen(Options::MaxContextLen);
@@ -163,8 +180,8 @@ bool DDAPass::edgeInSVFGSCC(const SVFGSCC* svfgSCC,const SVFGEdge* edge)
  */
 bool DDAPass::edgeInCallGraphSCC(PointerAnalysis* pta,const SVFGEdge* edge)
 {
-	const SVFFunction* srcFun = edge->getSrcNode()->getICFGNode()->getFun();
-	const SVFFunction* dstFun = edge->getDstNode()->getICFGNode()->getFun();
+    const SVFFunction* srcFun = edge->getSrcNode()->getICFGNode()->getFun();
+    const SVFFunction* dstFun = edge->getDstNode()->getICFGNode()->getFun();
 
     if(srcFun && dstFun)
     {
@@ -220,8 +237,8 @@ void DDAPass::collectCxtInsenEdgeForVFCycle(PointerAnalysis* pta, const SVFG* sv
                 if(this->edgeInSVFGSCC(svfgSCC,edge))
                 {
 
-                	const SVFFunction* srcFun = edge->getSrcNode()->getICFGNode()->getFun();
-                	const SVFFunction* dstFun = edge->getDstNode()->getICFGNode()->getFun();
+                    const SVFFunction* srcFun = edge->getSrcNode()->getICFGNode()->getFun();
+                    const SVFFunction* dstFun = edge->getDstNode()->getICFGNode()->getFun();
 
                     if(srcFun && dstFun)
                     {

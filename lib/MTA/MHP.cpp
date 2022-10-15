@@ -1,5 +1,27 @@
+//===- MHP.cpp -- May-happen-in-parallel analysis-------------//
+//
+//                     SVF: Static Value-Flow Analysis
+//
+// Copyright (C) <2013->  <Yulei Sui>
+//
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+//===----------------------------------------------------------------------===//
+
 /*
- * MTA.cpp
+ * MHP.cpp
  *
  *  Created on: Jan 21, 2014
  *      Author: Yulei Sui, Peng Di
@@ -11,7 +33,8 @@
 #include "MTA/LockAnalysis.h"
 #include "MTA/MTAResultValidator.h"
 #include "Util/SVFUtil.h"
-#include "MemoryModel/PTAStat.h"
+#include "Util/PTAStat.h"
+#include "SVF-FE/BasicTypes.h"
 
 using namespace SVF;
 using namespace SVFUtil;
@@ -117,7 +140,7 @@ void MHP::analyzeInterleaving()
                     handleCall(cts,rootTid);
                     PTACallGraph::FunctionSet callees;
                     if(!tct->isCandidateFun(getCallee(curInst, callees)))
-                       handleIntra(cts);
+                        handleIntra(cts);
                 }
                 else if(SVFUtil::isa<ReturnInst>(curInst))
                 {
@@ -137,7 +160,7 @@ void MHP::analyzeInterleaving()
 
     if(Options::PrintInterLev)
         printInterleaving();
-	
+
     validateResults();
 }
 
@@ -211,7 +234,7 @@ void MHP::handleFork(const CxtThreadStmt& cts, NodeID rootTid)
     CallICFGNode* cbn = getCBN(call);
     if(tct->getThreadCallGraph()->hasCallGraphEdge(cbn))
     {
-    	
+
         for (ThreadCallGraph::ForkEdgeSet::const_iterator cgIt = tcg->getForkEdgeBegin(cbn),
                 ecgIt = tcg->getForkEdgeEnd(cbn); cgIt != ecgIt; ++cgIt)
         {
@@ -288,13 +311,13 @@ void MHP::handleCall(const CxtThreadStmt& cts, NodeID rootTid)
 
     const CallInst* call = SVFUtil::cast<CallInst>(cts.getStmt());
     const CallStrCxt& curCxt = cts.getContext();
-	CallICFGNode* cbn = getCBN(call);
+    CallICFGNode* cbn = getCBN(call);
     if(tct->getThreadCallGraph()->hasCallGraphEdge(cbn))
     {
         for (PTACallGraph::CallGraphEdgeSet::const_iterator cgIt = tcg->getCallEdgeBegin(cbn),
                 ecgIt = tcg->getCallEdgeEnd(cbn); cgIt != ecgIt; ++cgIt)
         {
-        	
+
             const SVFFunction* svfcallee = (*cgIt)->getDstNode()->getFunction();
             const Function* callee = svfcallee->getLLVMFun();
             if (isExtCall(svfcallee))
@@ -604,9 +627,9 @@ bool MHP::mayHappenInParallel(const Instruction* i1, const Instruction* i2)
 {
     numOfTotalQueries++;
 
-    DOTIMESTAT(double queryStart = PTAStat::getClk());
+    DOTIMESTAT(double queryStart = PTAStat::getClk(true));
     bool mhp=mayHappenInParallelCache(i1,i2);
-    DOTIMESTAT(double queryEnd = PTAStat::getClk());
+    DOTIMESTAT(double queryEnd = PTAStat::getClk(true));
     DOTIMESTAT(interleavingQueriesTime += (queryEnd - queryStart) / TIMEINTERVAL);
 
     return mhp;
@@ -712,7 +735,7 @@ void ForkJoinAnalysis::collectSCEVInfo()
                 //const SCEV *joinSiteTidPtrSCEV = SE->getSCEV(const_cast<Value*>(joinSiteTidPtr));
                 //const SCEV *baseJoinTidPtrSCEV = SE->getSCEV(const_cast<Value*>(getBasePtr(joinSiteTidPtr)));
                 //joinSiteTidPtrSCEV = getSCEVMinusExpr(joinSiteTidPtrSCEV, baseJoinTidPtrSCEV, SE);
-                
+
                 PTASCEV scev(joinSiteTidPtr,nullptr,nullptr);
                 fkjnToPTASCEVMap.insert(std::make_pair(callInst,scev));
             }
@@ -751,7 +774,7 @@ void ForkJoinAnalysis::analyzeForkJoinPair()
                 DBOUT(DMTA,outs() << "-----\nForkJoinAnalysis root thread: " << it->first << " ");
                 DBOUT(DMTA,cts.dump());
                 DBOUT(DMTA,outs() << "-----\n");
-				PTACallGraph::FunctionSet callees;
+                PTACallGraph::FunctionSet callees;
                 if(isTDFork(curInst))
                 {
                     handleFork(cts,rootTid);
@@ -762,7 +785,7 @@ void ForkJoinAnalysis::analyzeForkJoinPair()
                 }
                 else if(SVFUtil::isa<CallInst>(curInst) && tct->isCandidateFun(getCallee(curInst, callees)))
                 {
-                	
+
                     handleCall(cts,rootTid);
                 }
                 else if(SVFUtil::isa<ReturnInst>(curInst))
@@ -794,7 +817,7 @@ void ForkJoinAnalysis::handleFork(const CxtStmt& cts, NodeID rootTid)
     const CallStrCxt& curCxt = cts.getContext();
 
     assert(isTDFork(call));
-	CallICFGNode* cbn = getCBN(call);
+    CallICFGNode* cbn = getCBN(call);
     if(getTCG()->hasThreadForkEdge(cbn))
     {
         for (ThreadCallGraph::ForkEdgeSet::const_iterator cgIt = getTCG()->getForkEdgeBegin(cbn),
@@ -820,7 +843,7 @@ void ForkJoinAnalysis::handleJoin(const CxtStmt& cts, NodeID rootTid)
     const CallStrCxt& curCxt = cts.getContext();
 
     assert(isTDJoin(call));
-	CallICFGNode* cbn = getCBN(call);
+    CallICFGNode* cbn = getCBN(call);
     if(getTCG()->hasCallGraphEdge(cbn))
     {
         const Instruction* forkSite = tct->getTCTNode(rootTid)->getCxtThread().getThread();
@@ -879,7 +902,7 @@ void ForkJoinAnalysis::handleCall(const CxtStmt& cts, NodeID rootTid)
 
     const CallInst* call = SVFUtil::cast<CallInst>(cts.getStmt());
     const CallStrCxt& curCxt = cts.getContext();
-	CallICFGNode* cbn = getCBN(call);
+    CallICFGNode* cbn = getCBN(call);
     if(getTCG()->hasCallGraphEdge(cbn))
     {
         for (PTACallGraph::CallGraphEdgeSet::const_iterator cgIt = getTCG()->getCallEdgeBegin(cbn),

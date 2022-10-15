@@ -1,3 +1,25 @@
+//===- PCG.cpp -- Procedure creation graph-------------//
+//
+//                     SVF: Static Value-Flow Analysis
+//
+// Copyright (C) <2013->  <Yulei Sui>
+//
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+//===----------------------------------------------------------------------===//
+
 /*
  * PCG.cpp
  *
@@ -8,6 +30,7 @@
 #include "Util/Options.h"
 #include "MTA/PCG.h"
 #include "Util/SVFUtil.h"
+#include "SVF-FE/BasicTypes.h"
 
 using namespace SVF;
 using namespace SVFUtil;
@@ -69,7 +92,7 @@ void PCG::initFromThreadAPI(SVFModule* module)
 {
     for (SVFModule::const_iterator fi = module->begin(), efi = module->end(); fi != efi; ++fi)
     {
-    	const Function* fun = (*fi)->getLLVMFun();
+        const Function* fun = (*fi)->getLLVMFun();
         for (inst_iterator II = inst_begin((*fi)->getLLVMFun()), E = inst_end((*fi)->getLLVMFun()); II != E; ++II)
         {
             const Instruction *inst = &*II;
@@ -204,9 +227,9 @@ void PCG::identifyFollowers()
                 const Instruction* inst = &*it;
                 // mark the callee of this callsite as follower
                 // if this is an call/invoke instruction but not a spawn site
-                if ((SVFUtil::isa<CallInst>(inst) || SVFUtil::isa<InvokeInst>(inst)) && !isSpawnsite(inst))
+                if ((SVFUtil::isCallSite(inst)) && !isSpawnsite(inst))
                 {
-                	CallICFGNode* cbn = getCallICFGNode(inst);
+                    CallICFGNode* cbn = getCallICFGNode(inst);
                     if (callgraph->hasCallGraphEdge(cbn))
                     {
                         for (PTACallGraph::CallGraphEdgeSet::const_iterator cgIt = callgraph->getCallEdgeBegin(cbn),

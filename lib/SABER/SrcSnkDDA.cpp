@@ -2,7 +2,7 @@
 //
 //                     SVF: Static Value-Flow Analysis
 //
-// Copyright (C) <2013-2017>  <Yulei Sui>
+// Copyright (C) <2013->  <Yulei Sui>
 //
 
 // This program is free software: you can redistribute it and/or modify
@@ -41,8 +41,8 @@ using namespace SVFUtil;
 /// Initialize analysis
 void SrcSnkDDA::initialize(SVFModule* module)
 {
-	SVFIRBuilder builder;
-	SVFIR* pag = builder.build(module);
+    SVFIRBuilder builder;
+    SVFIR* pag = builder.build(module);
 
     AndersenWaveDiff* ander = AndersenWaveDiff::createAndersenWaveDiff(pag);
     if(Options::SABERFULLSVFG)
@@ -53,7 +53,7 @@ void SrcSnkDDA::initialize(SVFModule* module)
     ptaCallGraph = ander->getPTACallGraph();
     //AndersenWaveDiff::releaseAndersenWaveDiff();
     /// allocate control-flow graph branch conditions
-    getPathAllocator()->allocate(getPAG()->getModule());
+    getSaberCondAllocator()->allocate(getPAG()->getModule());
 
     initSrcs();
     initSnks();
@@ -109,6 +109,7 @@ void SrcSnkDDA::analyze(SVFModule* module)
     }
 
     finalize();
+
 }
 
 
@@ -159,10 +160,11 @@ bool SrcSnkDDA::isInAWrapper(const SVFGNode* src, CallSiteSet& csIdSet)
             else
             {
                 const SVFGNode* succ = edge->getDstNode();
-                if(SVFUtil::isa<IntraDirSVFGEdge>(edge)){
+                if(SVFUtil::isa<IntraDirSVFGEdge>(edge))
+                {
                     if (SVFUtil::isa<CopySVFGNode>(succ) || SVFUtil::isa<GepSVFGNode>(succ)
-                        || SVFUtil::isa<PHISVFGNode>(succ) || SVFUtil::isa<FormalRetSVFGNode>(succ)
-                        || SVFUtil::isa<ActualRetSVFGNode>(succ) || SVFUtil::isa<StoreSVFGNode>(succ))
+                            || SVFUtil::isa<PHISVFGNode>(succ) || SVFUtil::isa<FormalRetSVFGNode>(succ)
+                            || SVFUtil::isa<ActualRetSVFGNode>(succ) || SVFUtil::isa<StoreSVFGNode>(succ))
                     {
                         worklist.push(succ);
                     }
@@ -278,7 +280,7 @@ void SrcSnkDDA::setCurSlice(const SVFGNode* src)
         clearVisitedMap();
     }
 
-    _curSlice = new ProgSlice(src,getPathAllocator(), getSVFG());
+    _curSlice = new ProgSlice(src,getSaberCondAllocator(), getSVFG());
 }
 
 void SrcSnkDDA::annotateSlice(ProgSlice* slice)
@@ -299,9 +301,9 @@ void SrcSnkDDA::dumpSlices()
         const_cast<SVFG*>(getSVFG())->dump("Slice",true);
 }
 
-void SrcSnkDDA::printBDDStat()
+void SrcSnkDDA::printZ3Stat()
 {
 
-    outs() << "BDD Mem usage: " << getPathAllocator()->getMemUsage() << "\n";
-    outs() << "BDD Number: " << getPathAllocator()->getCondNum() << "\n";
+    outs() << "Z3 Mem usage: " << getSaberCondAllocator()->getMemUsage() << "\n";
+    outs() << "Z3 Number: " << getSaberCondAllocator()->getCondNum() << "\n";
 }

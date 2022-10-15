@@ -2,7 +2,7 @@
 //
 //                     SVF: Static Value-Flow Analysis
 //
-// Copyright (C) <2013-2017>  <Yulei Sui>
+// Copyright (C) <2013->  <Yulei Sui>
 //
 
 // This program is free software: you can redistribute it and/or modify
@@ -64,24 +64,19 @@ public:
         // Whole program analysis
         Andersen_BASE,		///< Base Andersen PTA
         Andersen_WPA,		///< Andersen PTA
-        AndersenLCD_WPA,	///< Lazy cycle detection andersen-style WPA
-        AndersenHCD_WPA,    ///< Hybird cycle detection andersen-style WPA
-        AndersenHLCD_WPA,   ///< Hybird lazy cycle detection andersen-style WPA
         AndersenSCD_WPA,    ///< Selective cycle detection andersen-style WPA
         AndersenSFR_WPA,    ///< Stride-based field representation
         AndersenWaveDiff_WPA,	///< Diff wave propagation andersen-style WPA
-        AndersenWaveDiffWithType_WPA,	///< Diff wave propagation with type info andersen-style WPA
         Steensgaard_WPA,      ///< Steensgaard PTA
         CSCallString_WPA,	///< Call string based context sensitive WPA
         CSSummary_WPA,		///< Summary based context sensitive WPA
         FSDATAFLOW_WPA,	///< Traditional Dataflow-based flow sensitive WPA
         FSSPARSE_WPA,		///< Sparse flow sensitive WPA
-        FSTBHC_WPA,		///< Sparse flow-sensitive type-based heap cloning WPA
         VFS_WPA,		///< Versioned sparse flow-sensitive WPA
         FSCS_WPA,			///< Flow-, context- sensitive WPA
-        FSCSPS_WPA,		///< Flow-, context-, path- sensitive WPA
-        ADAPTFSCS_WPA,		///< Adaptive Flow-, context-, sensitive WPA
-        ADAPTFSCSPS_WPA,	///< Adaptive Flow-, context-, path- sensitive WPA
+        CFLFICI_WPA,		///< Flow-, context-, insensitive CFL-reachability-based analysis
+        CFLFSCI_WPA,		///< Flow-insensitive, context-sensitive  CFL-reachability-based analysis
+        CFLFSCS_WPA,	///< Flow-, context-, CFL-reachability-based analysis
         TypeCPP_WPA, ///<  Type-based analysis for C++
 
         // Demand driven analysis
@@ -165,10 +160,11 @@ protected:
     TypeSystem *typeSystem;
 
 public:
-	/// Get ICFG
-	inline ICFG* getICFG() const {
-		return pag->getICFG();
-	}
+    /// Get ICFG
+    inline ICFG* getICFG() const
+    {
+        return pag->getICFG();
+    }
     /// Return number of resolved indirect call edges
     inline u32_t getNumOfResolvedIndCallEdge() const
     {
@@ -238,10 +234,6 @@ public:
 
     /// Compute points-to results on-demand, overridden by derived classes
     virtual void computeDDAPts(NodeID) {}
-
-    /// Interface exposed to users of our pointer analysis, given Location infos
-    virtual AliasResult alias(const MemoryLocation &LocA,
-                              const MemoryLocation &LocB) = 0;
 
     /// Interface exposed to users of our pointer analysis, given Value infos
     virtual AliasResult alias(const Value* V1,

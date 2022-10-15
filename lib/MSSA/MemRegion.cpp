@@ -31,7 +31,6 @@
 #include "Util/SVFModule.h"
 #include "MSSA/MemRegion.h"
 #include "MSSA/MSSAMuChi.h"
-#include "SVF-FE/LLVMUtil.h"
 
 using namespace SVF;
 using namespace SVFUtil;
@@ -179,7 +178,7 @@ void MRGenerator::collectModRefForLoadStore()
         const SVFFunction& fun = **fi;
 
         /// if this function does not have any caller, then we do not care its MSSA
-        if (Options::IgnoreDeadFun && isDeadFunction(fun.getLLVMFun()))
+        if (Options::IgnoreDeadFun && fun.isUncalledFunction())
             continue;
 
         for (Function::const_iterator iter = fun.getLLVMFun()->begin(), eiter = fun.getLLVMFun()->end();
@@ -584,13 +583,13 @@ bool MRGenerator::isNonLocalObject(NodeID id, const SVFFunction* curFun) const
     /// or a local variable is in function recursion cycles
     else if(obj->isStack())
     {
-        if(const AllocaInst* local = SVFUtil::dyn_cast<AllocaInst>(obj->getValue()))
+        if(const Function* fun = pta->getPAG()->getGNode(id)->getFunction())
         {
-            const SVFFunction* fun = LLVMModuleSet::getLLVMModuleSet()->getSVFFunction(local->getFunction());
-            if(fun!=curFun)
+            const SVFFunction* svffun = LLVMModuleSet::getLLVMModuleSet()->getSVFFunction(fun);
+            if(svffun!=curFun)
                 return true;
             else
-                return callGraphSCC->isInCycle(callGraph->getCallGraphNode(fun)->getId());
+                return callGraphSCC->isInCycle(callGraph->getCallGraphNode(svffun)->getId());
         }
     }
 
@@ -806,4 +805,11 @@ ModRefInfo MRGenerator::getModRefInfo(const CallICFGNode* cs1, const CallICFGNod
         return ModRefInfo::Mod;
     else
         return ModRefInfo::NoModRef;
+}
+
+std::ostream& SVF::operator<<(std::ostream &o, const MRVer& mrver)
+{
+    o << "MRVERID: " << mrver.getID() <<" MemRegion: " << mrver.getMR()->dumpStr() << " MRVERSION: " << mrver.getSSAVersion() << " MSSADef: " << mrver.getDef()->getType() << ", "
+      << mrver.getDef()->getMR()->dumpStr() ;
+    return o;
 }

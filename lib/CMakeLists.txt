@@ -1,4 +1,3 @@
-add_subdirectory(CUDD)
 
 # Due to a mutual dependencies, all the sub projects of the SVG are merged here
 # Otherwise it is impossible to load the dependencies in opt
@@ -20,12 +19,12 @@ file (GLOB SOURCES
         MTA/*.cpp
         SABER/*.cpp
         DDA/*.cpp
+        CFL/*.cpp
         FastCluster/*.cpp
 )
 
-add_llvm_library(Svf STATIC ${SOURCES} LINK_LIBS Cudd ${Z3_LIBRARIES})
+add_llvm_library(Svf STATIC ${SOURCES} LINK_LIBS ${Z3_LIBRARIES})
 
-link_directories(${CMAKE_BINARY_DIR}/lib/Cudd)
 
 
 if(DEFINED IN_SOURCE_BUILD)

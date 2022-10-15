@@ -2,7 +2,7 @@
 //
 //                     SVF: Static Value-Flow Analysis
 //
-// Copyright (C) <2013-2017>  <Yulei Sui>
+// Copyright (C) <2013->  <Yulei Sui>
 //
 
 // This program is free software: you can redistribute it and/or modify
@@ -25,12 +25,20 @@
  *
  *  Created on: Apr 1, 2014
  *      Author: Yulei Sui
+ *
+ * The implementation is based on
+ * (1) Yulei Sui, Ding Ye, and Jingling Xue. "Static Memory Leak Detection Using Full-Sparse Value-Flow Analysis".
+ * 2012 International Symposium on Software Testing and Analysis (ISSTA'12)
+ *
+ * (2) Yulei Sui, Ding Ye, and Jingling Xue. "Detecting Memory Leaks Statically with Full-Sparse Value-Flow Analysis".
+ * IEEE Transactions on Software Engineering (TSE'14)
  */
 
 #ifndef SRCSNKANALYSIS_H_
 #define SRCSNKANALYSIS_H_
 
-#include "Util/CFLSolver.h"
+
+#include "Util/GraphReachSolver.h"
 #include "Graphs/SVFGOPT.h"
 #include "SABER/ProgSlice.h"
 #include "SABER/SaberSVFGBuilder.h"
@@ -38,7 +46,7 @@
 namespace SVF
 {
 
-typedef CFLSolver<SVFG*,CxtDPItem> CFLSrcSnkSolver;
+typedef GraphReachSolver<SVFG*,CxtDPItem> CFLSrcSnkSolver;
 
 /*!
  * General source-sink analysis, which serves as a base analysis to be extended for various clients
@@ -61,7 +69,7 @@ private:
     ProgSlice* _curSlice;		/// current program slice
     SVFGNodeSet sources;		/// source nodes
     SVFGNodeSet sinks;		/// source nodes
-    PathCondAllocator* pathCondAllocator;
+    SaberCondAllocator* saberCondAllocator;
     SVFGNodeToDPItemsMap nodeToDPItemsMap;	///<  record forward visited dpitems
     SVFGNodeSet visitedSet;	///<  record backward visited nodes
 
@@ -75,7 +83,7 @@ public:
     /// Constructor
     SrcSnkDDA() : _curSlice(nullptr), svfg(nullptr), ptaCallGraph(nullptr)
     {
-        pathCondAllocator = new PathCondAllocator();
+        saberCondAllocator = new SaberCondAllocator();
     }
     /// Destructor
     virtual ~SrcSnkDDA()
@@ -168,19 +176,23 @@ public:
     ///@{
     virtual void initSrcs() = 0;
     virtual void initSnks() = 0;
-    virtual bool isSourceLikeFun(const SVFFunction* fun) {
+    virtual bool isSourceLikeFun(const SVFFunction* fun)
+    {
         return false;
     }
 
-    virtual bool isSinkLikeFun(const SVFFunction* fun) {
+    virtual bool isSinkLikeFun(const SVFFunction* fun)
+    {
         return false;
     }
 
-    bool isSource(const SVFGNode* node) const {
+    bool isSource(const SVFGNode* node) const
+    {
         return getSources().find(node)!=getSources().end();
     }
 
-    bool isSink(const SVFGNode* node) const {
+    bool isSink(const SVFGNode* node) const
+    {
         return getSinks().find(node)!=getSinks().end();
     }
     ///@}
@@ -227,10 +239,10 @@ public:
     }
     //@}
 
-    /// Get path condition allocator
-    PathCondAllocator* getPathAllocator() const
+    /// Get saber condition allocator
+    SaberCondAllocator* getSaberCondAllocator() const
     {
-        return pathCondAllocator;
+        return saberCondAllocator;
     }
 
 protected:
@@ -302,7 +314,7 @@ protected:
     //@{
     void dumpSlices();
     void annotateSlice(ProgSlice* slice);
-    void printBDDStat();
+    void printZ3Stat();
     //@}
 
 };

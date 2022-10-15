@@ -1,8 +1,34 @@
+//===- FSMPTA.h -- Flow-sensitive analysis of multithreaded programs-------------//
+//
+//                     SVF: Static Value-Flow Analysis
+//
+// Copyright (C) <2013->  <Yulei Sui>
+//
+
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+//===----------------------------------------------------------------------===//
+
 /*
  * FSMPTA.h
  *
  *  Created on: Jul 29, 2015
  *      Author: Yulei Sui, Peng Di
+ *
+ * The implementation is based on
+ * Yulei Sui, Peng Di, and Jingling Xue. "Sparse Flow-Sensitive Pointer Analysis for Multithreaded Programs".
+ * 2016 International Symposium on Code Generation and Optimization (CGO'16)
  */
 
 #ifndef FSPTANALYSIS_H_
@@ -22,40 +48,48 @@ class MHP;
 class LockAnalysis;
 
 
-class SVFGNodeLockSpan {
+class SVFGNodeLockSpan
+{
 public:
-	SVFGNodeLockSpan(const StmtSVFGNode* SVFGnode, LockAnalysis::LockSpan lockspan) :
-	SVFGNode(SVFGnode), lockSpan(lockspan) {}
-	virtual ~SVFGNodeLockSpan() {}
-	
-	inline bool operator< (const SVFGNodeLockSpan& rhs) const {
-		if (SVFGNode != rhs.getSVFGNode())
-			return SVFGNode < rhs.getSVFGNode();
-		return lockSpan.size() < rhs.getLockSpan().size();
-	}
-	inline SVFGNodeLockSpan& operator= (const SVFGNodeLockSpan& rhs) {
-		if(*this != rhs) {
-			SVFGNode = rhs.getSVFGNode();
-			lockSpan = rhs.getLockSpan();
-		}
-		return *this;
-	}
-	inline bool operator== (const SVFGNodeLockSpan& rhs) const {
-		return (SVFGNode == rhs.getSVFGNode() && lockSpan == rhs.getLockSpan());
-	}
-	inline bool operator!= (const SVFGNodeLockSpan& rhs) const {
-		return !(*this == rhs);
-	}
-	inline const StmtSVFGNode* getSVFGNode() const {
-		return SVFGNode;
-	}
-	inline const LockAnalysis::LockSpan getLockSpan() const {
-		return lockSpan;
-	}
+    SVFGNodeLockSpan(const StmtSVFGNode* SVFGnode, LockAnalysis::LockSpan lockspan) :
+        SVFGNode(SVFGnode), lockSpan(lockspan) {}
+    virtual ~SVFGNodeLockSpan() {}
+
+    inline bool operator< (const SVFGNodeLockSpan& rhs) const
+    {
+        if (SVFGNode != rhs.getSVFGNode())
+            return SVFGNode < rhs.getSVFGNode();
+        return lockSpan.size() < rhs.getLockSpan().size();
+    }
+    inline SVFGNodeLockSpan& operator= (const SVFGNodeLockSpan& rhs)
+    {
+        if(*this != rhs)
+        {
+            SVFGNode = rhs.getSVFGNode();
+            lockSpan = rhs.getLockSpan();
+        }
+        return *this;
+    }
+    inline bool operator== (const SVFGNodeLockSpan& rhs) const
+    {
+        return (SVFGNode == rhs.getSVFGNode() && lockSpan == rhs.getLockSpan());
+    }
+    inline bool operator!= (const SVFGNodeLockSpan& rhs) const
+    {
+        return !(*this == rhs);
+    }
+    inline const StmtSVFGNode* getSVFGNode() const
+    {
+        return SVFGNode;
+    }
+    inline const LockAnalysis::LockSpan getLockSpan() const
+    {
+        return lockSpan;
+    }
 private:
-	const StmtSVFGNode* SVFGNode;
-	LockAnalysis::LockSpan lockSpan;
-};	
+    const StmtSVFGNode* SVFGNode;
+    LockAnalysis::LockSpan lockSpan;
+};
 
 /*!
  * SVFG builder for DDA
@@ -73,7 +107,7 @@ public:
     typedef Set<const Instruction*> InstSet;
     typedef std::pair<NodeID,NodeID> NodeIDPair;
     typedef Map<SVFGNodeLockSpan, bool> PairToBoolMap;
-    
+
     /// Constructor
     MTASVFGBuilder(MHP* m, LockAnalysis* la) : SVFGBuilder(), mhp(m), lockana(la)
     {
@@ -183,11 +217,12 @@ public:
 
     /// Initialize analysis
     void initialize(SVFModule* module);
-	
-	inline SVFIR* getPAG() {
-		return mhp->getTCT()->getPTA()->getPAG();
-	}
-	
+
+    inline SVFIR* getPAG()
+    {
+        return mhp->getTCT()->getPTA()->getPAG();
+    }
+
     /// Create signle instance of flow-sensitive pointer analysis
     static FSMPTA* createFSMPTA(SVFModule* module, MHP* m, LockAnalysis* la)
     {
@@ -222,12 +257,14 @@ private:
 
 } // End namespace SVF
 
-template <> struct std::hash<SVF::SVFGNodeLockSpan> {
-	size_t operator()(const SVF::SVFGNodeLockSpan &cs) const {
-		std::hash<SVF::StmtSVFGNode* >h;
-		SVF::StmtSVFGNode* node = const_cast<SVF::StmtSVFGNode* > (cs.getSVFGNode());
-		return h(node);
-	}
+template <> struct std::hash<SVF::SVFGNodeLockSpan>
+{
+    size_t operator()(const SVF::SVFGNodeLockSpan &cs) const
+    {
+        std::hash<SVF::StmtSVFGNode* >h;
+        SVF::StmtSVFGNode* node = const_cast<SVF::StmtSVFGNode* > (cs.getSVFGNode());
+        return h(node);
+    }
 };
 
 #endif /* FSPTANALYSIS_H_ */
